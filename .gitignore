@@ -60,3 +60,10 @@ target/
 # OSX
 .DS_Store
 
+
+# Songrande
+/build/
+/dist/
+*.spec.bak
+.pytest_cache/
+/out/

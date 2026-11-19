@@ -1,0 +1,1386 @@
+"""
+Copyright 2009-2017 Olivier Belanger (SoundGrain)
+
+This file is part of Songrande, a derivative of SoundGrain.
+
+Songrande is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+SoundGrain is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with SoundGrain.  If not, see <http://www.gnu.org/licenses/>.
+"""
+import os, math, random, time, wx
+import  wx.lib.scrolledpanel as scrolled
+from .constants import *
+from .audio import soundInfo, outputChannelCounts, OUTPUT_MODES
+from .Trajectory import DIRECTIONS
+from . import ambi, space
+from .widgets import ControlKnob
+from .numeric_input import filterNumericChar
+from pyo.lib._wxwidgets import ControlSlider, VuMeter
+
+class MeterFeed:
+    """Hands the audio server's levels to SoundGrain's meter, sixteen bars at
+    most: with more channels neighbouring ones share a bar."""
+    LIMIT = 16
+
+    def __init__(self, meter):
+        self.meter = meter
+
+    def setRms(self, *args):
+        if len(args) > self.LIMIT and args[0] >= 0:
+            group = int(math.ceil(len(args) / float(self.LIMIT)))
+            args = [max(args[i:i + group]) for i in range(0, len(args), group)]
+        try:
+            self.meter.setRms(*args)
+        except RuntimeError:
+            pass
+
+    @staticmethod
+    def bars(channels):
+        if channels <= MeterFeed.LIMIT:
+            return channels
+        group = int(math.ceil(channels / float(MeterFeed.LIMIT)))
+        return int(math.ceil(channels / float(group)))
+
+
+class ControlPanel(scrolled.ScrolledPanel):
+    def __init__(self, parent, surface):
+        scrolled.ScrolledPanel.__init__(self, parent, -1)
+        self.parent = parent
+        self.surface = surface
+        self.type = 0
+        self.selected = 0
+        self.selectedOkToChange = True
+        self.sndPath = ""
+        self.sndDur = 0.0
+        self.amplitude = 1
+        self.nchnls = 2
+        self.samplingRate = 44100
+        self.fileformat = 0
+        self.sampletype = 0
+        self.tempState = None
+        self.micGeneration = 0
+        self.micTimer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.refreshMicWaveform, self.micTimer)
+        self._variationWidthValue = 2
+        self._variationSpeedValue = 1.0
+        self._variationPeriodicityValue = 0.0
+
+        box = wx.BoxSizer(wx.VERTICAL)
+
+        box.Add(wx.StaticText(self, -1, "Trajectories"), 0, wx.CENTER|wx.TOP, 3)
+
+        typeBox = wx.BoxSizer(wx.HORIZONTAL)
+        popupBox = wx.BoxSizer(wx.VERTICAL)
+        self.trajType = wx.Choice(self, -1, choices = TRAJNAMES)
+        self.trajType.SetSelection(0)
+        popupBox.Add(self.trajType)
+        typeBox.Add(popupBox, 0, wx.CENTER|wx.RIGHT, 5)
+
+        # TODO: Check the size of this button on Windows and OSX
+        self.closedToggle = wx.ToggleButton(self, -1, 'Closed', size=self.trajType.GetSize())
+        # If this is no more needed, remove the next three lines...
+        font = self.closedToggle.GetFont()
+        if PLATFORM == 'win32':
+            font = wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.closedToggle.SetFont(font) # ... and all related calls in this method.
+        typeBox.Add(self.closedToggle, wx.CENTER|wx.RIGHT, 5 )
+        box.Add(typeBox, 0, wx.CENTER|wx.ALL, 5)
+
+        # the room: what the pen draws on and where it is seen from
+        roomBox = wx.BoxSizer(wx.HORIZONTAL)
+        small = self.GetFont()
+        small.SetPointSize(small.GetPointSize() - (1 if PLATFORM == "win32" else 2))
+        drawOnText = wx.StaticText(self, -1, "Draw on")
+        drawOnText.SetFont(small)
+        roomBox.Add(drawOnText, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        self.drawOnChoice = wx.Choice(self, -1, choices=DRAW_SURFACES)
+        self.drawOnChoice.SetSelection(0)
+        self.drawOnChoice.SetFont(small)
+        self.drawOnChoice.SetToolTip("What the pen draws on: a level floor at the pen's height, the sphere, or the plane facing you. (G)")
+        self.drawOnChoice.Bind(wx.EVT_CHOICE, lambda evt: self.surface.setDrawOn(evt.GetInt()))
+        roomBox.Add(self.drawOnChoice, 0, wx.RIGHT, 8)
+        viewText = wx.StaticText(self, -1, "View")
+        viewText.SetFont(small)
+        roomBox.Add(viewText, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        self.viewChoice = wx.Choice(self, -1, choices=space.VIEWS)
+        self.viewChoice.SetSelection(0)
+        self.viewChoice.SetFont(small)
+        self.viewChoice.SetToolTip("Where the room is seen from. (P, T, F, S)")
+        self.viewChoice.Bind(wx.EVT_CHOICE, lambda evt: self.surface.setView(evt.GetInt()))
+        roomBox.Add(self.viewChoice, 0)
+        box.Add(roomBox, 0, wx.CENTER | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        self.notebook = wx.Notebook(self, -1, style=wx.BK_DEFAULT | wx.EXPAND)
+        self.drawing = DrawingParameters(self.notebook)
+        self.playback = PlaybackParameters(self.notebook)
+        self.variation = VariationParameters(self.notebook)
+        self.room = RoomParameters(self.notebook)
+        self.penWidth = self.variation.sl_width
+        self.wanderSpeed = self.variation.sl_speed
+        self.wanderPeriodicity = self.variation.sl_periodicity
+        self.notebook.AddPage(self.drawing, "Draw")
+        self.notebook.AddPage(self.variation, "Var")
+        self.notebook.AddPage(self.playback, "Play")
+        self.notebook.AddPage(self.room, "3D")
+        # Leave room for all four tab labels without GTK scroll arrows.
+        tab_width = sum(self.notebook.GetTextExtent(label)[0]
+                        for label in ("Draw", "Var", "Play", "3D")) + 150
+        self.notebook.SetMinSize((tab_width, -1))
+        box.Add(self.notebook, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5)
+
+        # EQ
+        eqTitle = wx.StaticText(self, id=-1, label="4 Bands Equalizer")
+        box.Add(eqTitle, 0, wx.CENTER)
+
+        eqFreqBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.knobEqF1 = ControlKnob(self, 40, 250, 100, label='Freq 1', outFunction=self.changeEqF1)
+        eqFreqBox.Add(self.knobEqF1, 0, wx.LEFT | wx.RIGHT, 20)
+        self.knobEqF1.setFloatPrecision(2)
+        self.knobEqF2 = ControlKnob(self, 300, 1000, 500, label='Freq 2', outFunction=self.changeEqF2)
+        eqFreqBox.Add(self.knobEqF2, 0, wx.LEFT | wx.RIGHT, 4)
+        self.knobEqF2.setFloatPrecision(2)
+        self.knobEqF3 = ControlKnob(self, 1200, 5000, 2000, label='Freq 3', outFunction=self.changeEqF3)
+        eqFreqBox.Add(self.knobEqF3, 0, wx.LEFT | wx.RIGHT, 20)
+        self.knobEqF3.setFloatPrecision(2)
+
+        box.Add(eqFreqBox, 0, wx.ALIGN_CENTER_HORIZONTAL)
+
+        eqGainBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.knobEqA1 = ControlKnob(self, -40, 18, 0, label='B1 gain', outFunction=self.changeEqA1)
+        eqGainBox.Add(self.knobEqA1, 0, wx.LEFT | wx.RIGHT, 5)
+        self.knobEqA2 = ControlKnob(self, -40, 18, 0, label='B2 gain', outFunction=self.changeEqA2)
+        eqGainBox.Add(self.knobEqA2, 0, wx.LEFT | wx.RIGHT, 5)
+        self.knobEqA3 = ControlKnob(self, -40, 18, 0, label='B3 gain', outFunction=self.changeEqA3)
+        eqGainBox.Add(self.knobEqA3, 0, wx.LEFT | wx.RIGHT, 5)
+        self.knobEqA4 = ControlKnob(self, -40, 18, 0, label='B4 gain', outFunction=self.changeEqA4)
+        eqGainBox.Add(self.knobEqA4, 0, wx.LEFT | wx.RIGHT, 5)
+
+        box.Add(eqGainBox, 0, wx.ALIGN_CENTER_HORIZONTAL)
+
+        box.Add(wx.StaticLine(self, size=(210, 1)), 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5)
+
+        #Compress
+        compTitle = wx.StaticText(self, id=-1, label="Dynamic Compressor")
+        box.Add(compTitle, 0, wx.CENTER)
+
+        cpKnobBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.knobComp1 = ControlKnob(self, -60, 0, -3, label='Thresh', outFunction=self.changeComp1)
+        cpKnobBox.Add(self.knobComp1, 0, wx.LEFT | wx.RIGHT, 5)
+        self.knobComp2 = ControlKnob(self, 1, 10, 2, label='Ratio', outFunction=self.changeComp2)
+        cpKnobBox.Add(self.knobComp2, 0, wx.LEFT | wx.RIGHT, 5)
+        self.knobComp3 = ControlKnob(self, 0.001, 0.5, 0.05, label='Rise', outFunction=self.changeComp3)
+        cpKnobBox.Add(self.knobComp3, 0, wx.LEFT | wx.RIGHT, 5)
+        self.knobComp4 = ControlKnob(self, 0.01, 1, .2, label='Fall', outFunction=self.changeComp4)
+        cpKnobBox.Add(self.knobComp4, 0, wx.LEFT | wx.RIGHT, 5)
+
+        box.Add(cpKnobBox, 0, wx.ALIGN_CENTER_HORIZONTAL)
+
+        box.Add(wx.StaticLine(self, size=(210, 1)), 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5)
+
+        box.Add(wx.StaticText(self, -1, "Global amplitude (dB)"), 0, wx.LEFT | wx.TOP, 10)
+        ampBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_amp = ControlSlider(self, -60, 18, 0, size=(200, 16), outFunction=self.handleAmp)
+        ampBox.Add(self.sl_amp, 0, wx.LEFT | wx.RIGHT, 5)
+        box.Add(ampBox, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(10)
+        self.meter = VuMeter(self, size=(200,11))
+        self.meter.setNumSliders(self.nchnls)
+        self.meterFeed = MeterFeed(self.meter)
+        box.Add(self.meter, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        box.AddSpacer(5)
+
+        box.Add(wx.StaticLine(self, size=(210, 1)), 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5)
+
+        self.createSettingsWindow(font)
+
+        micBox = wx.BoxSizer(wx.HORIZONTAL)
+        micBox.Add(wx.StaticText(self, label="Dur (s)"), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.micLength = wx.TextCtrl(self, value="5", size=(55, -1), style=wx.TE_PROCESS_ENTER)
+        self.micLength.Bind(wx.EVT_CHAR, filterNumericChar)
+        micBox.Add(self.micLength, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.tog_mic = wx.ToggleButton(self, label="Mic", size=(80, -1))
+        self.tog_mic.SetFont(font)
+        self.tog_mic.Bind(wx.EVT_TOGGLEBUTTON, self.handleMic)
+        micBox.Add(self.tog_mic, 0, wx.ALIGN_CENTER_VERTICAL)
+        box.Add(micBox, 0, wx.CENTER | wx.ALL, 5)
+
+        soundBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.tog_audio = wx.ToggleButton(self, -1, "Start", size=(90,-1))
+        self.tog_audio.SetFont(font)
+        self.tog_audio.Disable()
+        soundBox.Add(self.tog_audio, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 5)
+        self.tog_record = wx.ToggleButton(self, -1, "Rec Start", size=(90,-1))
+        self.tog_record.SetFont(font)
+        soundBox.Add(self.tog_record, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 5)
+        box.Add(soundBox, 0, wx.CENTER | wx.ALL, 5)
+
+        self.Bind(wx.EVT_CHOICE, self.handleType, self.trajType)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.handleClosed, self.closedToggle)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.handleAudio, self.tog_audio)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self.handleRecord, self.tog_record)
+        self.but_folder.Bind(wx.EVT_TOGGLEBUTTON, self.chooseRecFolder)
+
+        self.SetAutoLayout(True)
+        self.SetSizerAndFit(box)
+        self.SetupScrolling(scroll_x = False)
+
+    def createSettingsWindow(self, font):
+        # Keep the controls alive so project loading and audio state updates also
+        # reach them while the settings window is hidden.
+        self.settingsWindow = settings = wx.Dialog(self.parent, title="Settings")
+        box = wx.BoxSizer(wx.VERTICAL)
+
+        audioBox = wx.StaticBoxSizer(wx.VERTICAL, settings, "Audio Settings")
+        audioGroup = audioBox.GetStaticBox()
+        audioGrid = wx.FlexGridSizer(cols=2, vgap=8, hgap=10)
+        audioGrid.AddGrowableCol(1, 1)
+        audioGrid.Add(wx.StaticText(audioGroup, label="Output device"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_audio_driver = wx.Choice(audioGroup, size=(300, -1))
+        self.pop_audio_driver.Bind(wx.EVT_CHOICE, self.handleAudioDriver)
+        audioGrid.Add(self.pop_audio_driver, 1, wx.EXPAND)
+        audioGrid.Add(wx.StaticText(audioGroup, label="Input device"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_input_driver = wx.Choice(audioGroup, size=(300, -1))
+        self.pop_input_driver.Bind(wx.EVT_CHOICE, self.handleInputDriver)
+        audioGrid.Add(self.pop_input_driver, 1, wx.EXPAND)
+        audioGrid.Add(wx.StaticText(audioGroup, label="Sample precision"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_precision = wx.Choice(audioGroup, choices=["32-bit", "64-bit"])
+        self.pop_precision.SetStringSelection(SAMPLE_PRECISION)
+        self.pop_precision.Bind(wx.EVT_CHOICE, self.handleSamplePrecision)
+        audioGrid.Add(self.pop_precision, 0, wx.ALIGN_CENTER_VERTICAL)
+        audioBox.Add(audioGrid, 0, wx.EXPAND | wx.ALL, 10)
+        audioBox.Add(wx.StaticText(audioGroup, label="Sample precision changes require restarting Songrande."),
+                     0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        box.Add(audioBox, 0, wx.EXPAND | wx.ALL, 12)
+
+        projectBox = wx.StaticBoxSizer(wx.VERTICAL, settings, "Project Settings")
+        projectGroup = projectBox.GetStaticBox()
+        projectGrid = wx.FlexGridSizer(cols=4, vgap=8, hgap=10)
+        projectGrid.Add(wx.StaticText(projectGroup, label="Sample rate"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_sr = wx.Choice(projectGroup, choices=['44100', '48000', '96000'], size=(90, -1))
+        self.pop_sr.SetSelection(0)
+        self.pop_sr.Bind(wx.EVT_CHOICE, self.handleSamplingRate)
+        projectGrid.Add(self.pop_sr, 0, wx.ALIGN_CENTER_VERTICAL)
+        projectGrid.Add(wx.StaticText(projectGroup, label="Channels"), 0, wx.ALIGN_CENTER_VERTICAL)
+        # the output format decides how many: this only shows it
+        self.tx_chnls = wx.TextCtrl(projectGroup, value="2", size=(60, -1), style=wx.TE_READONLY)
+        projectGrid.Add(self.tx_chnls, 0, wx.ALIGN_CENTER_VERTICAL)
+        projectBox.Add(projectGrid, 0, wx.ALL, 10)
+
+        outputGrid2 = wx.FlexGridSizer(cols=4, vgap=8, hgap=10)
+        outputGrid2.Add(wx.StaticText(projectGroup, label="Output"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_output = wx.Choice(projectGroup, choices=["Binaural (headphones)", "Stereo (two loudspeakers)",
+                                                           "Ambisonics (to a decoder)", "Loudspeakers"])
+        self.pop_output.SetSelection(0)
+        self.pop_output.Bind(wx.EVT_CHOICE, self.handleOutputFormat)
+        outputGrid2.Add(self.pop_output, 0, wx.ALIGN_CENTER_VERTICAL)
+        outputGrid2.Add(wx.StaticText(projectGroup, label="Order"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_order = wx.Choice(projectGroup, choices=["%d  (%d ch)" % (o, ambi.nch(o)) for o in range(1, ambi.MAX_ORDER + 1)])
+        self.pop_order.SetSelection(2)
+        self.pop_order.Bind(wx.EVT_CHOICE, self.handleOutputFormat)
+        outputGrid2.Add(self.pop_order, 0, wx.ALIGN_CENTER_VERTICAL)
+        outputGrid2.Add(wx.StaticText(projectGroup, label="Layout"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.layoutNames = [name for name in ambi.LAYOUT_NAMES if name != "Stereo"]
+        self.pop_layout = wx.Choice(projectGroup, choices=self.layoutNames)
+        self.pop_layout.SetStringSelection("Octagon")
+        self.pop_layout.Bind(wx.EVT_CHOICE, self.handleOutputFormat)
+        outputGrid2.Add(self.pop_layout, 0, wx.ALIGN_CENTER_VERTICAL)
+        outputGrid2.AddSpacer(0)
+        self.but_layout = wx.Button(projectGroup, label="Load layout...")
+        self.but_layout.SetFont(font)
+        self.but_layout.Bind(wx.EVT_BUTTON, lambda evt: self.parent.handleLoadLayout(evt))
+        outputGrid2.Add(self.but_layout, 0, wx.ALIGN_CENTER_VERTICAL)
+        projectBox.Add(outputGrid2, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.chk_recbus = wx.CheckBox(projectGroup, label="Record the Ambisonic bus (AmbiX) instead of what is heard")
+        self.chk_recbus.Bind(wx.EVT_CHECKBOX, self.handleRecordBus)
+        projectBox.Add(self.chk_recbus, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        projectBox.Add(wx.StaticText(projectGroup, label=
+            "Ambisonics is AmbiX (ACN order, SN3D), as the IEM and SPARTA decoders read it.\n"
+            "The output device needs as many channels as the format has."),
+            0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        box.Add(projectBox, 0, wx.EXPAND | wx.ALL, 12)
+
+        recordBox = wx.StaticBoxSizer(wx.VERTICAL, settings, "Record Settings")
+        recordGroup = recordBox.GetStaticBox()
+        formatGrid = wx.FlexGridSizer(cols=4, vgap=8, hgap=10)
+        formatGrid.Add(wx.StaticText(recordGroup, label="Format"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_fileformat = wx.Choice(recordGroup, choices=EXPORT_FORMATS, size=(90, -1))
+        self.pop_fileformat.SetSelection(0)
+        self.pop_fileformat.Bind(wx.EVT_CHOICE, self.handleFileFormat)
+        formatGrid.Add(self.pop_fileformat, 0, wx.ALIGN_CENTER_VERTICAL)
+        formatGrid.Add(wx.StaticText(recordGroup, label="Sample type"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pop_sampletype = wx.Choice(recordGroup, choices=EXPORT_TYPES)
+        self.pop_sampletype.SetSelection(0)
+        self.pop_sampletype.Bind(wx.EVT_CHOICE, self.handleSampleType)
+        formatGrid.Add(self.pop_sampletype, 0, wx.ALIGN_CENTER_VERTICAL)
+        recordBox.Add(formatGrid, 0, wx.ALL, 10)
+
+        outputGrid = wx.FlexGridSizer(cols=3, vgap=10, hgap=10)
+        outputGrid.Add(wx.StaticText(recordGroup, label="Destination"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.tx_rec_folder = wx.TextCtrl(recordGroup, value="~/Desktop", size=(250, -1))
+        outputGrid.Add(self.tx_rec_folder, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.but_folder = wx.ToggleButton(recordGroup, label="Choose")
+        self.but_folder.SetFont(font)
+        outputGrid.Add(self.but_folder, 0, wx.ALIGN_CENTER_VERTICAL)
+        outputGrid.Add(wx.StaticText(recordGroup, label="Filename"), 0, wx.ALIGN_CENTER_VERTICAL)
+        self.tx_output = wx.TextCtrl(recordGroup, value="snd", size=(250, -1))
+        outputGrid.Add(self.tx_output, 0, wx.ALIGN_CENTER_VERTICAL)
+        outputGrid.AddSpacer(0)
+        recordBox.Add(outputGrid, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        box.Add(recordBox, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        closeButton = wx.Button(settings, wx.ID_CLOSE, "Close")
+        closeButton.Bind(wx.EVT_BUTTON, self.closeSettings)
+        box.Add(closeButton, 0, wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        settings.SetSizerAndFit(box)
+        settings.Bind(wx.EVT_CLOSE, self.closeSettings)
+        settings.Bind(wx.EVT_CHAR_HOOK, self.handleSettingsKey)
+
+    def handleAudioDriver(self, event):
+        self.parent.handleDriver(event)
+
+    def handleInputDriver(self, event):
+        self.parent.handleInputDriver(event)
+
+    def handleSamplePrecision(self, event):
+        self.parent.handlePrecision(event)
+
+    def openSettings(self, event):
+        if not self.settingsWindow.IsShown():
+            self.settingsWindow.CentreOnParent()
+        self.settingsWindow.Show()
+        self.settingsWindow.Raise()
+
+    def closeSettings(self, event):
+        self.settingsWindow.Hide()
+        if isinstance(event, wx.CloseEvent):
+            if event.CanVeto():
+                event.Veto()
+            else:
+                event.Skip()
+
+    def handleSettingsKey(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.closeSettings(event)
+        else:
+            event.Skip()
+
+    def changeEqF1(self, x):
+        self.parent.sg_audio.setEqFreq(0, x)
+
+    def changeEqF2(self, x):
+        self.parent.sg_audio.setEqFreq(1, x)
+
+    def changeEqF3(self, x):
+        self.parent.sg_audio.setEqFreq(2, x)
+
+    def getEqFreqs(self):
+        return [self.knobEqF1.GetValue(), self.knobEqF2.GetValue(), self.knobEqF3.GetValue()]
+
+    def setEqFreqs(self, freqs):
+        self.knobEqF1.SetValue(freqs[0])
+        self.knobEqF2.SetValue(freqs[1])
+        self.knobEqF3.SetValue(freqs[2])
+
+    def changeEqA1(self, x):
+        self.parent.sg_audio.setEqGain(0, math.pow(10.0, x * 0.05))
+
+    def changeEqA2(self, x):
+        self.parent.sg_audio.setEqGain(1, math.pow(10.0, x * 0.05))
+
+    def changeEqA3(self, x):
+        self.parent.sg_audio.setEqGain(2, math.pow(10.0, x * 0.05))
+
+    def changeEqA4(self, x):
+        self.parent.sg_audio.setEqGain(3, math.pow(10.0, x * 0.05))
+
+    def getEqAmps(self):
+        return [self.knobEqA1.GetValue(), self.knobEqA2.GetValue(),
+                self.knobEqA3.GetValue(), self.knobEqA4.GetValue()]
+
+    def setEqAmps(self, amps):
+        self.knobEqA1.SetValue(amps[0])
+        self.knobEqA2.SetValue(amps[1])
+        self.knobEqA3.SetValue(amps[2])
+        self.knobEqA4.SetValue(amps[3])
+
+    def changeComp1(self, x):
+        self.parent.sg_audio.setCompParam("thresh", x)
+
+    def changeComp2(self, x):
+        self.parent.sg_audio.setCompParam("ratio", x)
+
+    def changeComp3(self, x):
+        self.parent.sg_audio.setCompParam("risetime", x)
+
+    def changeComp4(self, x):
+        self.parent.sg_audio.setCompParam("falltime", x)
+
+    def getCompValues(self):
+        return [self.knobComp1.GetValue(), self.knobComp2.GetValue(),
+                self.knobComp3.GetValue(), self.knobComp4.GetValue()]
+
+    def setCompValues(self, vals):
+        self.knobComp1.SetValue(vals[0])
+        self.knobComp2.SetValue(vals[1])
+        self.knobComp3.SetValue(vals[2])
+        self.knobComp4.SetValue(vals[3])
+
+    def checkEnableWidgets(self):
+        if self.type == 0:
+            self.closedToggle.Enable()
+        else:
+            self.closedToggle.Disable()
+        if self.type in (2, 4):
+            # the oscillation's period and scaling are the spiral's turns and climb
+            self.drawing.sl_period.Enable()
+            self.drawing.sl_scaling.Enable()
+        else:
+            self.drawing.sl_period.Disable()
+            self.drawing.sl_scaling.Disable()
+
+    def handleType(self, event):
+        self.processType(event.GetInt())
+
+    def getType(self):
+        return self.type
+
+    def setType(self, type):
+        self.trajType.SetSelection(type)
+        self.processType(type)
+
+    def processType(self, type):
+        self.type = type
+        self.surface.setMode(type)
+        self.checkEnableWidgets()
+
+    def handleClosed(self, event):
+        self.surface.setClosed(event.GetInt())
+
+    def getClosed(self):
+        return self.closedToggle.GetValue()
+
+    def setClosed(self, closed):
+        self.closedToggle.SetValue(closed)
+        self.surface.setClosed(closed)
+
+    def handleCutoff(self, val):
+        for traj in self.surface.getAllTrajectories():
+            traj.setFilterFreq(val)
+
+    def getCutoff(self):
+        return self.drawing.sl_cutoff.GetValue()
+
+    def setCutoff(self, cutoff):
+        self.drawing.sl_cutoff.SetValue(cutoff)
+        for traj in self.surface.getAllTrajectories():
+            traj.setFilterFreq(cutoff)
+
+    def handleQ(self, val):
+        for traj in self.surface.getAllTrajectories():
+            traj.setFilterQ(val)
+
+    def getQ(self):
+        return self.drawing.sl_q.GetValue()
+
+    def setQ(self, q):
+        self.drawing.sl_q.SetValue(q)
+        for traj in self.surface.getAllTrajectories():
+            traj.setFilterQ(q)
+
+    def handlePeriod(self, val):
+        self.surface.setOscilPeriod(val)
+
+    def getPeriod(self):
+        return self.surface.getOscilPeriod()
+
+    def setPeriod(self, period):
+        self.drawing.sl_period.SetValue(period)
+        self.surface.setOscilPeriod(period)
+
+    def handleScaling(self, val):
+        self.surface.setOscilScaling(val)
+
+    def getScaling(self):
+        return self.surface.getOscilScaling()
+
+    def setScaling(self, scaling):
+        self.drawing.sl_scaling.SetValue(scaling)
+        self.surface.setOscilScaling(scaling)
+
+    def resetPlaybackSliders(self):
+        selToMax = False
+        if self.selected == MAX_STREAMS:
+            self.selected = 0
+            selToMax = True
+        timeSpeed = self.surface.getTrajectory(self.selected).getTimeSpeed()
+        self.setTimerSpeed(timeSpeed)
+        step = self.surface.getTrajectory(self.selected).getStep()
+        self.setStep(step)
+        amp = self.surface.getTrajectory(self.selected).getAmplitude()
+        self.setTrajAmp(amp)
+        self.playback.pop_direction.SetSelection(self.surface.getTrajectory(self.selected).getDirection())
+        if selToMax:
+            self.selected = MAX_STREAMS
+        self.resetVariationSliders()
+        self.surface.needBitmap = True
+
+    def resetVariationSliders(self):
+        index = 0 if self.selected == MAX_STREAMS else self.selected
+        trajectory = self.surface.getTrajectory(index)
+        self._variationWidthValue = trajectory.getWidth()
+        self._variationSpeedValue = trajectory.getWanderSpeed()
+        self._variationPeriodicityValue = trajectory.getWanderPeriodicity()
+        self.penWidth.SetValue(self._variationWidthValue, False)
+        self.wanderSpeed.SetValue(self._variationSpeedValue, False)
+        self.wanderPeriodicity.SetValue(self._variationPeriodicityValue, False)
+
+    def _variationTargets(self):
+        if self.selected == MAX_STREAMS:
+            return self.surface.getActiveTrajectories()
+        return [self.surface.getTrajectory(self.selected)]
+
+    def handleWidth(self, value):
+        value = int(value)
+        # pyo sliders also call outFunction on repaint. Only edits should
+        # affect trajectories; loading another selection must be read-only.
+        if value == self._variationWidthValue:
+            return
+        self._variationWidthValue = value
+        for trajectory in self._variationTargets():
+            trajectory.setWidth(value)
+        self.surface.needBitmap = True
+        self.surface.Refresh()
+        self.parent.is_unsaved = True
+
+    def handleWanderSpeed(self, value):
+        if abs(value - self._variationSpeedValue) < 1e-9:
+            return
+        self._variationSpeedValue = value
+        for trajectory in self._variationTargets():
+            trajectory.setWanderSpeed(value)
+        self.parent.is_unsaved = True
+
+    def handleWanderPeriodicity(self, value):
+        if abs(value - self._variationPeriodicityValue) < 1e-9:
+            return
+        self._variationPeriodicityValue = value
+        for trajectory in self._variationTargets():
+            trajectory.setWanderPeriodicity(value)
+        self.surface.Refresh()
+        self.parent.is_unsaved = True
+
+    def handleDirection(self, event):
+        for trajectory in self._variationTargets():
+            trajectory.setDirection(event.GetInt())
+        self.parent.is_unsaved = True
+
+    def handlePenHeight(self, value):
+        self.surface.setPenHeight(value)
+
+    def handleSphereRadius(self, value):
+        self.surface.setSphereRadius(value)
+
+    def syncSpaceTab(self):
+        """Show what the room is set to (after a key, a button of the room or a loaded project)."""
+        if not hasattr(self, "room"):
+            return
+        self.drawOnChoice.SetSelection(self.surface.drawOn)
+        self.viewChoice.SetSelection(space.VIEWS.index(self.surface.camera.view))
+        self.room.sl_height.SetValue(self.surface.penHeight, False)
+        self.room.sl_radius.SetValue(self.surface.sphereRadius, False)
+        if hasattr(self.parent, "menuView"):
+            self.parent.syncViewMenu()
+
+    # ------------------------------------------------------------------
+    # the output format
+    # ------------------------------------------------------------------
+    def showOutputFormat(self):
+        """Bring the Settings window in line with the sound engine."""
+        s = self.parent.sg_audio.space
+        self.pop_output.SetSelection(OUTPUT_MODES.index(s["output"]))
+        self.pop_order.SetSelection(int(s["order"]) - 1)
+        names = list(self.layoutNames)
+        if s.get("customLayout"):
+            names.append(s.get("customLayoutName") or "Custom")
+        self.pop_layout.Set(names)
+        if s.get("customLayout"):
+            self.pop_layout.SetSelection(len(names) - 1)
+        elif s["layout"] in names:
+            self.pop_layout.SetStringSelection(s["layout"])
+        self.pop_layout.Enable(s["output"] == "Speakers" and self.pop_output.IsEnabled())
+        self.chk_recbus.SetValue(bool(s.get("recordBus")))
+        self.chk_recbus.Enable(s["output"] != "Ambisonics")
+        self.nchnls = self.parent.sg_audio.outputChannels()
+        self.tx_chnls.SetValue(str(self.nchnls))
+
+    def enableFormat(self, state):
+        for control in (self.pop_output, self.pop_order, self.pop_layout, self.but_layout):
+            control.Enable(state)
+        if state:
+            self.showOutputFormat()
+
+    def handleRecordBus(self, event):
+        self.parent.sg_audio.space["recordBus"] = bool(event.GetInt())
+
+    def handleOutputFormat(self, event):
+        s = self.parent.sg_audio.space
+        changes = {"output": OUTPUT_MODES[self.pop_output.GetSelection()],
+                   "order": self.pop_order.GetSelection() + 1}
+        index = self.pop_layout.GetSelection()
+        if 0 <= index < len(self.layoutNames):
+            changes["layout"] = self.layoutNames[index]
+            changes["customLayout"] = None
+            changes["customLayoutName"] = ""
+        self.changeOutputFormat(changes)
+
+    def setCustomLayout(self, layout, name):
+        self.changeOutputFormat({"output": "Speakers", "customLayout": [list(e) if e != ambi.LFE else e for e in layout],
+                                 "customLayoutName": name})
+
+    def formatDiffers(self, changes):
+        s = self.parent.sg_audio.space
+        for key in ("output", "order", "layout", "customLayout", "customLayoutName"):
+            if key in changes and changes[key] != s.get(key):
+                return True
+        return False
+
+    def changeOutputFormat(self, changes):
+        """Set output, order or layout and restart the audio server if they changed."""
+        if not self.formatDiffers(changes):
+            self.showOutputFormat()
+            return
+        status, path = self.parent.checkForMixedSound()
+        if not status:
+            self.showOutputFormat()
+            return
+        if "Mixed sound" in self.sndPath:
+            self.sndPath = path
+        was_running = self.parent.sg_audio.started
+        if was_running:
+            self.showOutputFormat()
+            return
+        booted = self.parent.sg_audio.booted
+        if booted:
+            self.shutdownServer()
+        self.parent.sg_audio.space.update(changes)
+        if self.tempState is not None and "Space" in self.tempState:
+            self.tempState["Space"].update(changes)
+        if booted:
+            self.bootServer()
+        else:
+            self.showOutputFormat()
+        self.parent.is_unsaved = True
+
+    def applyOutputFormat(self, spaceState, samplingRate):
+        """A project is loading: take its output format and sampling rate, with
+        one restart of the audio server if anything differs."""
+        changes = {key: spaceState[key] for key in ("output", "order", "layout", "customLayout", "customLayoutName")
+                   if key in spaceState}
+        if "recordBus" in spaceState:
+            self.parent.sg_audio.space["recordBus"] = bool(spaceState["recordBus"])
+        SR = {44100: 0, 48000: 1, 96000: 2}
+        differs = self.formatDiffers(changes) or samplingRate != self.samplingRate
+        if not differs or not self.parent.sg_audio.booted:
+            self.parent.sg_audio.space.update(changes)
+            self.samplingRate = samplingRate
+            self.pop_sr.SetSelection(SR.get(samplingRate, 0))
+            self.showOutputFormat()
+            return
+        self.parent.sg_audio.shutdown()
+        self.parent.sg_audio.space.update(changes)
+        self.samplingRate = samplingRate
+        self.pop_sr.SetSelection(SR.get(samplingRate, 0))
+        self.tempState = None
+        sound, self.sndPath = self.sndPath, ""
+        self.bootServer()
+        self.sndPath = sound
+
+    def handleSelected(self, event):
+        if event.GetInt() != self.selected:
+            self.selectedOkToChange = False
+            self.setSelected(event.GetInt())
+
+    def setSelected(self, selected):
+        self.playback.tog_traj.SetSelection(selected)
+        self.variation.tog_traj.SetSelection(selected)
+        self.selected = selected
+        if selected < MAX_STREAMS:
+            self.surface.setSelectedById(selected)
+        self.resetPlaybackSliders()
+        self.surface.Refresh()
+
+    def getSelected(self):
+        return self.selected
+
+    def handlePopupFocus(self, evt):
+        self.selectedOkToChange = False
+        evt.Skip()
+
+    def handleTimerSpeed(self, val):
+        if self.selectedOkToChange:
+            if self.selected == MAX_STREAMS:
+                for t in self.surface.getActiveTrajectories():
+                    t.setTimeSpeed(val)
+            else:
+                self.surface.getTrajectory(self.selected).setTimeSpeed(val)
+        else:
+            self.selectedOkToChange = True
+
+    def setTimerSpeed(self, timeSpeed):
+        self.playback.sl_timespeed.SetValue(timeSpeed, self.selectedOkToChange)
+
+    def sendTrajSpeed(self, which, speed):
+        self.parent.sg_audio.setMetroTime(which, speed * 0.001)
+
+    def handleStep(self, val):
+        if self.selectedOkToChange:
+            if self.selected == MAX_STREAMS:
+                for t in self.surface.getActiveTrajectories():
+                    t.setStep(val)
+            else:
+                self.surface.getTrajectory(self.selected).setStep(val)
+        else:
+            self.selectedOkToChange = True
+
+    def setStep(self, step):
+        self.playback.sl_step.SetValue(step, self.selectedOkToChange)
+
+    def handleTrajAmp(self, val):
+        val = pow(10.0, float(val) * 0.05)
+        if self.selectedOkToChange:
+            if self.selected == MAX_STREAMS:
+                for t in self.surface.getActiveTrajectories():
+                    t.setAmplitude(val)
+                    self.parent.sg_audio.setTrajAmplitude(t.label-1, val)
+            else:
+                self.surface.getTrajectory(self.selected).setAmplitude(val)
+                self.parent.sg_audio.setTrajAmplitude(self.selected, val)
+        else:
+            self.selectedOkToChange = True
+
+    def setTrajAmp(self, val):
+        if val <= 0.0:
+            val = 0.0001
+        self.playback.sl_amp.SetValue(20.0 * math.log10(val), self.selectedOkToChange)
+
+    def handleAmp(self, val):
+        self.amplitude = pow(10.0, float(val) * 0.05)
+        self.sendAmp()
+
+    def getAmp(self):
+        return self.amplitude
+
+    def setAmp(self, amp):
+        if amp <= 0.0:
+            amp = 0.0001
+        self.sl_amp.SetValue(20.0 * math.log10(amp))
+        self.amplitude = amp
+
+    def sendAmp(self):
+        self.parent.sg_audio.setGlobalAmp(self.amplitude)
+
+    def handleLoad(self):
+        dlg = wx.FileDialog(self, message="Choose a sound file",
+                            defaultDir=self.parent.lastAudioPath,
+                            wildcard=AUDIO_WILDCARD, style=wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            sndPath = dlg.GetPath()
+            status, _ = self.parent.checkForMixedSound()
+            if status:
+                if self.parent.sg_audio.micRecording:
+                    self.finishMic()
+                self.loadSound(ensureNFD(sndPath))
+                self.parent.lastAudioPath = os.path.split(sndPath)[0]
+        dlg.Destroy()
+
+    def handleInsert(self):
+        ok = False
+        dlg = wx.FileDialog(self, message="Choose a sound file to insert",
+                            defaultDir=self.parent.lastAudioPath,
+                            wildcard=AUDIO_WILDCARD, style=wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            ok = True
+            sndPath = dlg.GetPath()
+            self.parent.lastAudioPath = os.path.split(sndPath)[0]
+        dlg.Destroy()
+        if ok:
+            self.insertSound(ensureNFD(sndPath), True)
+
+    def loadSound(self, sndPath, force=False):
+        if sndPath:
+            if os.path.isfile(sndPath):
+                self.sndPath = sndPath
+                self.parent.sg_audio.loadSnd(self.sndPath)
+                chnls, samprate, dur = soundInfo(self.sndPath)
+                self.sndDur = dur
+                self.chnls = chnls
+                self.sndInfoStr = u'Loaded sound: %s,  Sr: %i Hz,  Channels: %s,  Duration: %.3f sec' % (self.sndPath, int(samprate), chnls, dur)
+                if self.parent.draw:
+                    if not self.sndPath in self.surface.bitmapDict.keys() or force:
+                        self.parent.log("Drawing waveform...")
+                        self.surface.analyse(self.sndPath)
+                    else:
+                        self.surface.list = self.surface.bitmapDict[self.sndPath]
+                        self.surface.create_bitmap()
+                self.logSndInfo()
+            elif os.path.isfile(os.path.join(self.parent.currentPath, os.path.split(sndPath)[1])):
+                self.loadSound(os.path.join(self.parent.currentPath, os.path.split(sndPath)[1]), force)
+            elif ":\\" in sndPath:
+                # Handle windows path...
+                self.loadSound(os.path.join(self.parent.currentPath, sndPath.split("\\")[-1]), force)
+            else:
+                self.parent.log('Sound file "%s" does not exist!' % sndPath)
+        else:
+            self.parent.log("")
+
+    def insertSound(self, sndPath, force=False):
+        if not self.sndPath:
+            self.loadSound(sndPath)
+            return
+        if sndPath:
+            if os.path.isfile(sndPath):
+                self.sndPath = "Mixed sound " + str(random.randint(0, 10000))
+                chnls, samprate, dur = soundInfo(sndPath)
+                dlg = InsertDialog(self, -1, 'Insert sound settings', actual_dur=self.sndDur, snd_dur=dur)
+                refpos = self.surface.GetPosition()
+                refsize = self.surface.GetSize()
+                dlgsize = dlg.GetSize()
+                X = refpos[0] + (refsize[0] / 2 - dlgsize[0] / 2)
+                Y = refpos[1] + (refsize[1] / 2 - dlgsize[1] / 2)
+                dlg.SetPosition((X,Y))
+                if dlg.ShowModal() == wx.ID_OK:
+                    start, end, point, cross = dlg.getValues()
+                    ok = True
+                else:
+                    ok = False
+                dlg.Destroy()
+                if not ok:
+                    return
+                self.parent.sg_audio.insertSnd(sndPath, start, end, point, cross)
+                self.sndDur = self.parent.sg_audio.getTableDuration()
+                self.sndInfoStr = u'Loaded sound: %s,    Sr: %s Hz,    Channels: %s,    Duration: %s sec' % (self.sndPath, samprate, self.chnls, self.sndDur)
+                if self.parent.draw:
+                    if not self.sndPath in self.surface.bitmapDict.keys() or force:
+                        self.parent.log("Drawing waveform...")
+                        self.surface.analyse(self.sndPath)
+                    else:
+                        self.surface.list = self.surface.bitmapDict[self.sndPath]
+                        self.surface.create_bitmap()
+                self.logSndInfo()
+            elif os.path.isfile(os.path.join(self.parent.currentPath, os.path.split(sndPath)[1])):
+                self.insertSound(os.path.join(self.parent.currentPath, os.path.split(sndPath)[1]), force)
+            elif ":\\" in sndPath:
+                # Handle windows path...
+                self.insertSound(os.path.join(self.parent.currentPath, sndPath.split("\\")[-1]), force)
+            else:
+                self.parent.log('Sound file "%s" does not exist!' % sndPath)
+
+    def drawWaveform(self):
+        if self.surface.sndBitmap and self.parent.draw:
+            self.surface.analyse(self.sndPath)
+
+    def getNchnls(self):
+        return self.nchnls
+
+    def setNchnls(self, x):
+        # SoundGrain's channel count: here the output format decides
+        pass
+
+    def handleNchnls(self, event):
+        pass
+
+    def getSamplingRate(self):
+        return self.samplingRate
+
+    def setSamplingRate(self, x):
+        SR = {44100: 0, 48000: 1, 96000: 2}
+        if x != self.samplingRate:
+            self.samplingRate = x
+            self.pop_sr.SetSelection(SR[self.samplingRate])
+            self.shutdownServer()
+            self.bootServer()
+
+    def handleSamplingRate(self, event):
+        SR = {0: 44100, 1: 48000, 2: 96000}
+        x = SR[event.GetInt()]
+        if x != self.samplingRate:
+            status, path = self.parent.checkForMixedSound()
+            if not status:
+                SR = {44100: 0, 48000: 1, 96000: 2}
+                self.pop_sr.SetSelection(SR[self.samplingRate])
+                return
+            if "Mixed sound" in self.sndPath:
+                self.sndPath = path
+            self.samplingRate = x
+            self.shutdownServer()
+            self.bootServer()
+
+    def getFileFormat(self):
+        return self.fileformat
+
+    def setFileFormat(self, x):
+        self.fileformat = x
+        self.pop_fileformat.SetSelection(self.fileformat)
+
+    def handleFileFormat(self, event):
+        self.fileformat = event.GetInt()
+
+    def getSampleType(self):
+        return self.sampletype
+
+    def setSampleType(self, x):
+        self.sampletype = x
+        self.pop_sampletype.SetSelection(self.sampletype)
+
+    def handleSampleType(self, event):
+        self.sampletype = event.GetInt()
+
+    def bootServer(self):
+        audio = self.parent.sg_audio
+        needed = audio.outputChannels()
+        have = outputChannelCounts().get(self.parent.audioDriver) if audio.audioBackend == "portaudio" else None
+        message = None
+        if have is not None and have < needed:
+            message = ("The output device has %d channels and %s needs %d: listening on headphones "
+                       "(Binaural) instead. Choose a device with more channels in Settings."
+                       % (have, self.pop_output.GetString(OUTPUT_MODES.index(audio.space["output"])), needed))
+            audio.space["output"] = "Binaural"
+        try:
+            audio.boot(self.parent.audioDriver, self.nchnls, self.samplingRate, self.parent.inputDriver)
+        except Exception as error:
+            if audio.space["output"] == "Binaural":
+                raise
+            message = ("Listening on headphones (Binaural) instead: %s. Choose a device with more "
+                       "channels in Settings." % error)
+            audio.space["output"] = "Binaural"
+            if self.tempState is not None and "Space" in self.tempState:
+                self.tempState["Space"]["output"] = "Binaural"
+            audio.boot(self.parent.audioDriver, self.nchnls, self.samplingRate, self.parent.inputDriver)
+        self.nchnls = audio.chnls
+        bars = MeterFeed.bars(self.nchnls)
+        if bars != self.meter.numSliders:
+            self.meter.setNumSliders(bars)
+        self.showOutputFormat()
+        self.tog_audio.Enable()
+        self.tog_mic.Enable(self.parent.sg_audio.inputAvailable)
+        if self.sndPath != "" and self.tempState == None:
+            self.loadSound(self.sndPath)
+        if self.tempState != None:
+            self.parent.setState(self.tempState)
+            self.tempState = None
+        if message:
+            self.parent.log(message)
+        elif not self.parent.sg_audio.inputAvailable:
+            self.parent.log("Audio input unavailable; playback is using output only. Check the input device in Settings.")
+        self.surface.Refresh()
+
+    def shutdownServer(self):
+        if self.parent.sg_audio.micRecording:
+            self.finishMic()
+        self.tempState = self.parent.getState()
+        self.parent.sg_audio.shutdown()
+        self.tog_audio.Disable()
+        self.tog_mic.Disable()
+        self.surface.Refresh()
+
+    def handleAudio(self, event):
+        if event.GetInt() == 1:
+            if self.sndPath == "":
+                self.parent.log('*** No sound loaded! ***')
+                self.tog_audio.SetValue(0)
+                self.parent.menu.Check(7, False)
+            else:
+                self.enableFormat(False)
+                self.pop_sr.Disable()
+                self.parent.enableDrivers(False)
+                self.tog_audio.SetLabel('Stop')
+                self.tog_audio.SetValue(1)
+                self.parent.menu.Check(7, True)
+
+                for t in self.surface.getAllTrajectories():
+                    t.initCounter()
+                self.parent.sg_audio.start()
+        else:
+            self.enableFormat(True)
+            self.pop_sr.Enable()
+            self.parent.enableDrivers(True)
+            if self.parent.sg_audio.micRecording:
+                self.enableFormat(False)
+                self.pop_sr.Disable()
+                self.parent.enableDrivers(False)
+            self.tog_audio.SetLabel('Start')
+            self.tog_audio.SetValue(0)
+            self.parent.menu.Check(7, False)
+            self.tog_record.SetValue(0)
+            self.tog_record.SetLabel('Rec Start')
+            self.parent.sg_audio.stop()
+
+    def handleMic(self, event):
+        if not self.tog_mic.GetValue():
+            self.finishMic()
+            return
+        try:
+            length = float(self.micLength.GetValue())
+            if not math.isfinite(length) or not 0.1 <= length <= 3600:
+                raise ValueError()
+        except ValueError:
+            self.tog_mic.SetValue(False)
+            wx.MessageBox("Enter a recording length from 0.1 to 3600 seconds.",
+                          "Microphone", wx.OK | wx.ICON_ERROR, self)
+            return
+        status, _ = self.parent.checkForMixedSound()
+        if not status:
+            self.tog_mic.SetValue(False)
+            return
+        self.micGeneration += 1
+        generation = self.micGeneration
+        try:
+            self.parent.sg_audio.startMic(length, lambda: self.finishMic(generation))
+        except Exception as error:
+            self.tog_mic.SetValue(False)
+            wx.MessageBox(str(error), "Microphone", wx.OK | wx.ICON_ERROR, self)
+            return
+        self.sndPath = "Mixed sound (microphone)"
+        self.surface.bitmapDict.pop(self.sndPath, None)
+        self.surface.zoomWaveform = None
+        self.sndDur = self.parent.sg_audio.getTableDuration()
+        self.sndInfoStr = "Microphone recording: %.3f seconds, mono" % self.sndDur
+        self.parent.is_unsaved = True
+        self.micLastSamples = self.parent.sg_audio.server.getCurrentTimeInSamples()
+        self.micLastProgress = time.monotonic()
+        self.micLength.Disable()
+        self.tog_mic.SetLabel("Mic Stop")
+        self.enableFormat(False)
+        self.pop_sr.Disable()
+        self.parent.enableDrivers(False)
+        self.refreshMicWaveform(None)
+        self.micTimer.Start(100)
+        self.logSndInfo()
+
+    def refreshMicWaveform(self, event):
+        if not self.parent.sg_audio.micRecording:
+            return
+        samples = self.parent.sg_audio.server.getCurrentTimeInSamples()
+        now = time.monotonic()
+        if samples != self.micLastSamples:
+            self.micLastSamples = samples
+            self.micLastProgress = now
+        elif now - self.micLastProgress > 5:
+            self.finishMic()
+            wx.MessageBox("The audio device did not deliver samples. Check the input and output devices in Settings.",
+                          "Microphone", wx.OK | wx.ICON_ERROR, self)
+            return
+        if self.parent.draw:
+            self.surface.analyse(self.sndPath)
+
+    def finishMic(self, generation=None):
+        if generation is not None and generation != self.micGeneration:
+            return
+        if not self.parent.sg_audio.micRecording:
+            return
+        self.micGeneration += 1
+        self.micTimer.Stop()
+        self.parent.sg_audio.stopMic()
+        self.tog_mic.SetValue(False)
+        self.tog_mic.SetLabel("Mic")
+        self.micLength.Enable()
+        if not self.parent.sg_audio.started:
+            self.enableFormat(True)
+            self.pop_sr.Enable()
+            self.parent.enableDrivers(True)
+        if self.parent.draw:
+            self.surface.analyse(self.sndPath)
+
+    def setRecordFolder(self, str):
+        self.tx_rec_folder.SetValue(str)
+
+    def setRecordFilename(self, str):
+        self.tx_output.SetValue(str)
+
+    def handleRecord(self, event):
+        if event.GetInt() == 1:
+            folder = self.tx_rec_folder.GetValue()
+            if folder.startswith("~"):
+                folder = folder.replace("~", os.path.expanduser("~"), 1)
+            if os.path.isdir(folder):
+                filename = os.path.join(folder, self.tx_output.GetValue())
+            else:
+                filename = os.path.join(os.path.expanduser('~'), "Desktop", self.tx_output.GetValue())
+            written = self.parent.sg_audio.recStart(filename, self.fileformat, self.sampletype)
+            self.parent.log("Recording to %s" % written)
+            self.tog_record.SetLabel('Rec Stop')
+        else:
+            self.tog_record.SetLabel('Rec Start')
+            self.parent.sg_audio.recStop()
+
+    def chooseRecFolder(self, evt):
+        dlg = wx.DirDialog(self, message="Choose a folder to save Songrande's output sounds...",
+                            defaultPath=os.path.expanduser("~"))
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            self.tx_rec_folder.SetValue(ensureNFD(path))
+        dlg.Destroy()
+        self.but_folder.SetValue(0)
+
+    def logSndInfo(self):
+        self.parent.log(self.sndInfoStr)
+
+class DrawingParameters(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+        self.parent = parent
+        box = wx.BoxSizer(wx.VERTICAL)
+
+        lpcutText = wx.StaticText(self, -1, "Lowpass cutoff", size=(195,15))
+        font, psize = lpcutText.GetFont(), lpcutText.GetFont().GetPointSize()
+        if sys.platform == "win32":
+            font.SetPointSize(psize-1)
+        else:
+            font.SetPointSize(psize-2)
+        box.Add(lpcutText, 0, wx.LEFT|wx.TOP, 5)
+        cutoffBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_cutoff = ControlSlider(self, 100, 15000, 5000, size=(195, 16), integer=True, log=True, outFunction=self.parent.GetParent().handleCutoff)
+        cutoffBox.Add(self.sl_cutoff)
+        box.Add(cutoffBox, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+
+        lpqText = wx.StaticText(self, -1, "Lowpass Q", size=(195,15))
+        box.Add(lpqText, 0, wx.LEFT, 5)
+        qBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_q = ControlSlider(self, 0.5, 1000, 0.5, size=(195, 16), outFunction=self.parent.GetParent().handleQ)
+        qBox.Add(self.sl_q)
+        box.Add(qBox, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+
+        oscpText = wx.StaticText(self, -1, "Oscil period", size=(195,15))
+        box.Add(oscpText, 0, wx.LEFT, 5)
+        periodBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_period = ControlSlider(self, 0, 5, 2, size=(195, 16), outFunction=self.parent.GetParent().handlePeriod)
+        periodBox.Add(self.sl_period)
+        self.sl_period.Disable()
+        box.Add(periodBox, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+
+        oscsclText = wx.StaticText(self, -1, "Oscil scaling", size=(195,15))
+        box.Add(oscsclText, 0, wx.LEFT, 5)
+        scalingBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_scaling = ControlSlider(self, 0, 4, 1, size=(195, 16), outFunction=self.parent.GetParent().handleScaling)
+        scalingBox.Add(self.sl_scaling)
+        self.sl_scaling.Disable()
+        box.Add(scalingBox, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+
+        for obj in [lpcutText, lpqText, oscpText, oscsclText]:
+            obj.SetFont(font)
+
+        self.SetAutoLayout(True)
+        self.SetSizer(box)
+
+class VariationParameters(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+        controls = parent.GetParent()
+        box = wx.BoxSizer(wx.VERTICAL)
+        trajBox = wx.BoxSizer(wx.HORIZONTAL)
+        selectionText = wx.StaticText(self, label="Selected Traj:")
+        font = selectionText.GetFont()
+        font.SetPointSize(font.GetPointSize() - (1 if PLATFORM == "win32" else 2))
+        selectionText.SetFont(font)
+        trajBox.Add(selectionText, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+        self.tog_traj = wx.Choice(self, choices=[str(i + 1) for i in range(MAX_STREAMS)] + ["all"])
+        self.tog_traj.SetFont(font)
+        self.tog_traj.SetSelection(0)
+        self.tog_traj.Bind(wx.EVT_CHOICE, controls.handleSelected)
+        trajBox.Add(self.tog_traj, 0, wx.LEFT, 5)
+        box.Add(trajBox, 0, wx.TOP, 2)
+        box.AddSpacer(5)
+        widthText = wx.StaticText(self, label="Width", size=(195, 15))
+        font = widthText.GetFont()
+        font.SetPointSize(font.GetPointSize() - (1 if PLATFORM == "win32" else 2))
+        widthText.SetFont(font)
+        box.Add(widthText, 0, wx.LEFT, 5)
+        self.sl_width = ControlSlider(self, 2, 500, 2, size=(195, 16), integer=True, outFunction=controls.handleWidth)
+        self.sl_width.SetToolTip("Width of the selected trajectory, or all active trajectories.")
+        box.Add(self.sl_width, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+        speedText = wx.StaticText(self, label="Variation speed", size=(195, 15))
+        speedText.SetFont(font)
+        box.Add(speedText, 0, wx.LEFT, 5)
+        self.sl_speed = ControlSlider(self, 0.1, 10, 1, size=(195, 16), log=True, outFunction=controls.handleWanderSpeed)
+        self.sl_speed.SetToolTip("Random variation speed of the selected trajectories: 1 is normal speed.")
+        box.Add(self.sl_speed, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+        periodicityText = wx.StaticText(self, label="Periodic <--> Random", size=(195, 15))
+        periodicityText.SetFont(font)
+        box.Add(periodicityText, 0, wx.LEFT, 5)
+        self.sl_periodicity = ControlSlider(self, 0, 1, 0, size=(195, 16),
+                                           outFunction=controls.handleWanderPeriodicity)
+        self.sl_periodicity.SetToolTip("0: sinusoidal; 1: fully random; values between blend the two.")
+        box.Add(self.sl_periodicity, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+        self.SetSizer(box)
+
+class RoomParameters(wx.Panel):
+    """The "3D" tab: where the pen is."""
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+        controls = parent.GetParent()
+        box = wx.BoxSizer(wx.VERTICAL)
+        heightText = wx.StaticText(self, label="Pen height (floor)", size=(195, 15))
+        font = heightText.GetFont()
+        font.SetPointSize(font.GetPointSize() - (1 if PLATFORM == "win32" else 2))
+        heightText.SetFont(font)
+        box.Add(heightText, 0, wx.LEFT | wx.TOP, 5)
+        self.sl_height = ControlSlider(self, -1, 1, 0, size=(195, 16), outFunction=controls.handlePenHeight)
+        self.sl_height.SetToolTip("Height of the floor the pen draws on: 0 is ear level, 1 the top of the loudspeaker sphere.")
+        box.Add(self.sl_height, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+        radiusText = wx.StaticText(self, label="Sphere radius", size=(195, 15))
+        radiusText.SetFont(font)
+        box.Add(radiusText, 0, wx.LEFT, 5)
+        self.sl_radius = ControlSlider(self, 0.1, 1.7, 1, size=(195, 16), outFunction=controls.handleSphereRadius)
+        self.sl_radius.SetToolTip("Radius of the sphere the pen draws on: 1 is the loudspeaker sphere.")
+        box.Add(self.sl_radius, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(8)
+        for line in ("Cmd/Ctrl-drag or wheel: pull the pen up",
+                     "Right-drag or Alt-drag: walk round",
+                     "Wheel: come closer    Esc: reset the view"):
+            hint = wx.StaticText(self, label=line)
+            hint.SetFont(font)
+            box.Add(hint, 0, wx.LEFT, 5)
+        self.SetSizer(box)
+
+class PlaybackParameters(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+        self.parent = parent
+        box = wx.BoxSizer(wx.VERTICAL)
+
+        trajBox = wx.BoxSizer(wx.HORIZONTAL)
+        seltrajText = wx.StaticText(self, -1, "Selected Traj:")
+        font, psize = seltrajText.GetFont(), seltrajText.GetFont().GetPointSize()
+        if sys.platform == "win32":
+            font.SetPointSize(psize-1)
+        else:
+            font.SetPointSize(psize-2)
+        trajBox.Add(seltrajText, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+
+        trajChoices = [str(i+1) for i in range(MAX_STREAMS)]
+        trajChoices.append("all")
+        self.tog_traj = wx.Choice(self, -1, choices=trajChoices)
+        self.tog_traj.SetSelection(0)
+        self.tog_traj.Bind(wx.EVT_CHOICE, self.parent.GetParent().handleSelected)
+        self.tog_traj.Bind(wx.EVT_LEFT_DOWN, self.parent.GetParent().handlePopupFocus)
+        trajBox.Add(self.tog_traj, 0, wx.LEFT, 5)
+        box.Add(trajBox, 0, wx.TOP, 2)
+        box.AddSpacer(5)
+
+        spdText = wx.StaticText(self, -1, "Timer speed", size=(195,15))
+        box.Add(spdText, 0, wx.LEFT, 5)
+        timespeedBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_timespeed = ControlSlider(self, 5, 1000, 25, size=(195, 16), log=True, outFunction=self.parent.GetParent().handleTimerSpeed)
+        timespeedBox.Add(self.sl_timespeed)
+        box.Add(timespeedBox, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+
+        ptstepText = wx.StaticText(self, -1, "Point step", size=(195,15))
+        box.Add(ptstepText, 0, wx.LEFT, 5)
+        stepBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_step = ControlSlider(self, 1, 100, 1, size=(195, 16), integer=True, outFunction=self.parent.GetParent().handleStep)
+        stepBox.Add(self.sl_step)
+        box.Add(stepBox, 0, wx.LEFT | wx.RIGHT, 5)
+        box.AddSpacer(5)
+
+        ampText = wx.StaticText(self, -1, "Amplitude (dB)", size=(195,15))
+        box.Add(ampText, 0, wx.LEFT, 5)
+        ampBox = wx.BoxSizer(wx.HORIZONTAL)
+        self.sl_amp = ControlSlider(self, -60, 18, 0, size=(195, 16), integer=False, outFunction=self.parent.GetParent().handleTrajAmp)
+        ampBox.Add(self.sl_amp)
+        box.Add(ampBox, 0, wx.LEFT | wx.RIGHT, 5)
+
+        box.AddSpacer(5)
+        dirBox = wx.BoxSizer(wx.HORIZONTAL)
+        dirText = wx.StaticText(self, -1, "Direction:")
+        dirBox.Add(dirText, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+        self.pop_direction = wx.Choice(self, -1, choices=DIRECTIONS)
+        self.pop_direction.SetSelection(0)
+        self.pop_direction.SetToolTip("Which way the selected trajectory is walked: to its end and again from the start, the other way, or to and fro.")
+        self.pop_direction.Bind(wx.EVT_CHOICE, self.parent.GetParent().handleDirection)
+        dirBox.Add(self.pop_direction, 0, wx.LEFT, 5)
+        box.Add(dirBox, 0, wx.BOTTOM, 3)
+
+        for obj in [seltrajText, self.tog_traj, spdText, ptstepText, ampText, dirText, self.pop_direction]:
+            obj.SetFont(font)
+
+        self.SetAutoLayout(True)
+        self.SetSizer(box)
+
+class InsertDialog(wx.Dialog):
+    def __init__(self, parent, id, title, actual_dur, snd_dur):
+        wx.Dialog.__init__(self, parent, id, title)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        stline = wx.StaticText(self, -1, 'Starting point in seconds:')
+        vbox.Add(stline, 1, wx.ALIGN_CENTER_HORIZONTAL|wx.TOP, 10)
+        self.startSlider = ControlSlider(self, 0, snd_dur, 0, outFunction=self.handleStart)
+        vbox.Add(self.startSlider, 0, wx.ALL, 5)
+
+        stline = wx.StaticText(self, -1, 'Ending point in seconds:')
+        vbox.Add(stline, 1, wx.ALIGN_CENTER_HORIZONTAL|wx.TOP, 10)
+        self.endSlider = ControlSlider(self, 0, snd_dur, snd_dur, outFunction=self.handleEnd)
+        vbox.Add(self.endSlider, 0, wx.ALL, 5)
+
+        stline = wx.StaticText(self, -1, 'Insertion point in seconds:')
+        vbox.Add(stline, 1, wx.ALIGN_CENTER_HORIZONTAL|wx.TOP, 10)
+        self.insertSlider = ControlSlider(self, 0, actual_dur, 0)
+        vbox.Add(self.insertSlider, 0, wx.ALL, 5)
+
+        stline = wx.StaticText(self, -1, 'Crossfade time in seconds:')
+        vbox.Add(stline, 1, wx.ALIGN_CENTER_HORIZONTAL|wx.TOP, 10)
+        self.crossfadeSlider = ControlSlider(self, 0.001, snd_dur*0.5, 0, outFunction=self.handleCross)
+        vbox.Add(self.crossfadeSlider, 0, wx.ALL, 5)
+
+        sizer =  self.CreateButtonSizer(wx.CANCEL|wx.OK)
+        vbox.Add(sizer, 0, wx.ALL, 10)
+        self.SetSizerAndFit(vbox)
+
+    def handleStart(self, val):
+        start = self.startSlider.GetValue()
+        end = self.endSlider.GetValue()
+        cross = self.crossfadeSlider.GetValue()
+        if start >= (end - .1):
+            self.endSlider.SetValue(start + .1, False)
+        rng = (end - start) * 0.5
+        if cross > rng:
+            self.crossfadeSlider.SetValue(rng, False)
+
+    def handleEnd(self, val):
+        start = self.startSlider.GetValue()
+        end = self.endSlider.GetValue()
+        cross = self.crossfadeSlider.GetValue()
+        if end <= (start + .1):
+            self.startSlider.SetValue(end - .1, False)
+        rng = (end - start) * 0.5
+        if cross > rng:
+            self.crossfadeSlider.SetValue(rng, False)
+
+    def handleCross(self, val):
+        start = self.startSlider.GetValue()
+        end = self.endSlider.GetValue()
+        cross = self.crossfadeSlider.GetValue()
+        rng = (end - start) * 0.5
+        if cross > rng:
+            self.crossfadeSlider.SetValue(rng, False)
+
+    def getValues(self):
+        return (self.startSlider.GetValue(), self.endSlider.GetValue(),
+                self.insertSlider.GetValue(), self.crossfadeSlider.GetValue())
