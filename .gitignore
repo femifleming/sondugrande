@@ -67,3 +67,6 @@ target/
 *.spec.bak
 .pytest_cache/
 /out/
+
+# the PyInstaller recipe of this repository is kept
+!packaging/apps.spec

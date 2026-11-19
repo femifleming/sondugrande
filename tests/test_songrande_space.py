@@ -446,6 +446,38 @@ class SceneTests(unittest.TestCase):
         audio.setXposition.assert_called_with(0, 1.0)
         audio.setYposition.assert_called_with(0, 0.8)
 
+    def test_flock(self):
+        def run(flock, ticks=400):
+            scene = Scene()
+            scene.audio = Mock()
+            scene.flock = flock
+            a = scene.addTrajectory('line', points=[(200 + i, 300, 0) for i in range(300)])
+            b = scene.addTrajectory('line', points=[(200 + i, 700, 200) for i in range(300)])
+            for t in (a, b):
+                t.setDirection(2)
+            gaps, leashes = [], []
+            for tick in range(ticks):
+                scene.clock(0)
+                scene.clock(1)
+                pa = scene.audio.setSpatial.call_args_list[-2][0][1]
+                pb = scene.audio.setSpatial.call_args_list[-1][0][1]
+                gaps.append(np.linalg.norm(np.array(pa) - np.array(pb)))
+                leashes.append(np.linalg.norm(np.array(pa) - np.array(a.circlePos)))
+                self.assertTrue(np.isfinite(pa).all() and np.isfinite(pb).all())
+                self.assertTrue(0 <= pa[0] <= 1000 and 0 <= pa[1] <= 1000 and -500 <= pa[2] <= 500)
+            return np.array(gaps), np.array(leashes), a
+        gaps0, leash0, a = run(0.0)
+        self.assertEqual(float(leash0.max()), 0.0)             # off: the sound is on the line
+        self.assertIsNone(a.soundPos)
+        gaps1, leash1, a = run(1.0)
+        self.assertGreater(float(leash1[50:].mean()), 20.0)    # on: it has left the line
+        self.assertLess(float(leash1.max()), 400.0)            # but stays on its leash
+        self.assertLess(float(gaps1[50:].mean()), float(gaps0[50:].mean()) - 30.0)   # and they have come together
+        self.assertGreater(float(gaps1.min()), 20.0)           # without falling on each other
+        self.assertIsNotNone(a.soundPos)
+        gaps_half, leash_half, a = run(0.5)
+        self.assertLess(float(leash_half[50:].mean()), float(leash1[50:].mean()))
+
     def test_fx_ball_is_a_sphere(self):
         ball = Ball(0, 0, center=(500, 500, 0), size=200)
         self.assertAlmostEqual(ball.getAmpValue((500, 500, 0)), 1.0)

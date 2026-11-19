@@ -51,14 +51,19 @@ def read(path):
     return flat[:frames * channels].reshape(frames, channels).T.copy(), rate
 
 
-def write(path, samples, rate=44100):
-    """Write a float array (channels, frames) or (frames,) as a 32-bit float WAV."""
-    a = np.asarray(samples, dtype="<f4")
+def write(path, samples, rate=44100, bits=32):
+    """Write a float array (channels, frames) or (frames,) as a WAV file:
+    32-bit float, or 16-bit integers with bits=16."""
+    a = np.asarray(samples, dtype=float)
     if a.ndim == 1:
         a = a[None, :]
     channels, frames = a.shape
-    body = a.T.tobytes()
-    fmt = struct.pack("<HHIIHH", 3, channels, int(rate), int(rate) * channels * 4, channels * 4, 32)
+    if bits == 16:
+        body = np.round(np.clip(a.T, -1.0, 1.0) * 32767.0).astype("<i2").tobytes()
+        fmt = struct.pack("<HHIIHH", 1, channels, int(rate), int(rate) * channels * 2, channels * 2, 16)
+    else:
+        body = a.T.astype("<f4").tobytes()
+        fmt = struct.pack("<HHIIHH", 3, channels, int(rate), int(rate) * channels * 4, channels * 4, 32)
     with open(path, "wb") as f:
         f.write(b"RIFF" + struct.pack("<I", 36 + len(body)) + b"WAVE")
         f.write(b"fmt " + struct.pack("<I", len(fmt)) + fmt)

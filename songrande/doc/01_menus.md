@@ -16,7 +16,8 @@ Closes the current project (ask to save if modified) and starts a new one.
 
 ##### Open... (*Ctrl+O*) #####
 
-Open a previously created .sg file.
+Open a previously created .sgr file, or a SoundGrain .sg file (its surface
+becomes the floor of the room; it is then saved as a new .sgr file).
 
 ##### Open Recent... #####
 
@@ -38,7 +39,7 @@ Save the current state of the project.
 
 ##### Save As... (*Shift+Ctrl+S*) #####
 
-Save the current state of the project in a new .sg file.
+Save the current state of the project in a new .sgr file.
 
 ##### Open Settings (*Ctrl+;*) #####
 
@@ -48,17 +49,19 @@ and __Record Settings__.
 In __Audio Settings__, choose the input and output audio devices and sample
 precision. The device lists are updated at startup, and devices cannot be
 changed during playback or microphone recording. Changing sample precision
-requires restarting SoundGrain.
+requires restarting Songrande.
 
-In __Project Settings__, choose the __Sample rate__ and number of __Channels__.
-Both values must be supported by the current audio driver. These controls are
-disabled while audio playback is running.
+In __Project Settings__, choose the __Sample rate__ and the __Output__: headphones
+(Binaural), two loudspeakers (Stereo), Ambisonics for a decoder, or a
+loudspeaker __Layout__, and the Ambisonic __Order__. __Channels__ shows how many
+channels that is; the audio device must have as many. See [Space](07_space.md).
+These controls are disabled while audio playback is running.
 
 In __Record Settings__, choose the audio file __Format__ and __Sample type__.
 Enter the output folder path in __Destination__, or click __Choose__ to select
 it with a folder dialog.
 
-Enter a base name in __Filename__, without an extension. SoundGrain automatically
+Enter a base name in __Filename__, without an extension. Songrande automatically
 appends the date, time and the extension for the selected format to avoid
 overwriting an existing file.
 
@@ -77,6 +80,12 @@ decide on which parameters, and its range, the Y axis of the drawing area
 will be mapped. Available parameters are: Density of grains, transposition, 
 grain duration, start time deviation, amplitude, grain panning and various 
 per grain randoms applied to the granulator.
+
+##### Open Space Controls (*Ctrl+L*) #####
+
+Open the [Space controls window](07_space.md): the size of the room, distance,
+Doppler, spread, grain scatter, reverb, the turning of the scene, and what the
+X and Y of the granulator follow.
 
 ##### Open Envelope Window (*Ctrl+E*) #####
 
@@ -126,6 +135,38 @@ key is pressed with the focus is on the drawing surface.
 ##### Reinit counters  (*Ctrl+T*) #####
 
 Re-sync the trajectories's counters (automatically done when audio is started).
+
+______________________________________________________________________________
+
+View Menu
+---------
+
+##### 3D, Top, Front, Side view (*P, T, F, S*) #####
+
+Where the room is seen from. See [The Room](02_surface.md).
+
+##### Reset view (*Esc*) #####
+
+Put the view back where it started.
+
+##### Draw on the floor / sphere / view (*G*) #####
+
+The surface under the pen.
+
+______________________________________________________________________________
+
+Space Menu
+----------
+
+What can be done to the selected trajectory in the room: duplicate, mirrored
+twin, flips, turn, tilts, raise and lower, larger and smaller, wrap onto the
+sphere, flatten. The letter after each item is its key, with the focus on the
+room. All of them can be undone.
+
+##### Load a loudspeaker layout (IEM / SPARTA JSON)... #####
+
+Use a loudspeaker layout saved by the IEM AllRADecoder or SPARTA for the
+__Loudspeakers__ output.
 
 ______________________________________________________________________________
 

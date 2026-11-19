@@ -183,7 +183,9 @@ class MovementTests(unittest.TestCase):
         def pitch(doppler, size):
             state = stateWith(build, sound=sound, doppler=doppler, roomSize=size, rolloff=0.0, air=0.0)
             state["ControlFrame"]["graindur"] = 400
-            state["ControlFrame"]["graindev"] = 1.0     # grains at random times: no pitch of their own
+            # grains at random times, so that their rate is not heard as a pitch of its own
+            # (not the full deviation of 1: there pyo's granulator falls silent for whole seconds)
+            state["ControlFrame"]["graindev"] = 0.6
             state["ControlFrame"]["rndpos"] = 0.3
             state["ControlFrame"]["pitCheck"] = 0       # the Y axis must not transpose here
             samples, rate = renderState(state, dur=2.0, output="Ambisonics", order=1)
@@ -294,6 +296,52 @@ class SceneSoundTests(unittest.TestCase):
         self.assertGreater(np.sqrt(np.mean(wet[0, rate // 2:] ** 2)), 1.15 * np.sqrt(np.mean(dry[0, rate // 2:] ** 2)))
         vec, power = ambi.intensity_vector(wet[:4, rate // 2:])
         self.assertLess(vec[1], -0.9)
+
+    def test_every_effect_gives_out_sound_and_never_a_nan(self):
+        ball_at = roomPoints([roomAt(-90, 0, 0.8)])[0]
+        for fx in range(10):
+            with self.subTest(fx=fx):
+                def inside(scene, fx=fx):
+                    scene.addTrajectory('line', points=[ball_at, (ball_at[0] + 1e-3, ball_at[1], ball_at[2])])
+                    scene.addFxBall(fx, center=ball_at, size=200)
+                samples, rate = renderState(stateWith(inside), dur=1.5, output="Ambisonics", order=1)
+                self.assertTrue(np.isfinite(samples).all())
+                self.assertGreater(float(np.abs(samples).max()), 0.01)
+                self.assertLess(float(np.abs(samples).max()), 8.0)
+
+    def test_harmonizer_ball_transposes(self):
+        ball_at = roomPoints([roomAt(-90, 0, 0.8)])[0]
+
+        def inside(scene):
+            scene.addTrajectory('line', points=[ball_at, (ball_at[0] + 1e-3, ball_at[1], ball_at[2])])
+            scene.addFxBall(6, center=ball_at, size=200)
+
+        state = stateWith(inside, sound=sineSound("a440.wav", freq=440.0))
+        state["ControlFrame"].update({"pitCheck": 0, "graindev": 0.6, "rndpos": 0.3})
+        # an octave down, no feedback, the ball's sound at full level
+        state["fxballs"]["0"]["controls"] = {"slider1": -12, "slider2": 0.0, "slider3": 1.0, "slider4": 0.0}
+        samples, rate = renderState(state, dur=3.0, output="Ambisonics", order=1)
+        w = samples[0, rate:]
+        spec = np.abs(np.fft.rfft(w * np.hanning(len(w))))
+        freqs = np.fft.rfftfreq(len(w), 1.0 / rate)
+
+        def band(low, high):
+            return float(np.sqrt(np.sum(spec[(freqs > low) & (freqs < high)] ** 2)))
+        self.assertGreater(band(205, 235), 0.3 * band(420, 460))      # the octave below is there
+        self.assertLess(band(280, 380), 0.05 * band(420, 460))        # and nothing in between
+
+    def test_no_dropouts_at_the_walls(self):
+        # the left and right walls are the start and the end of the sound: grains must
+        # still fit there, with their random place as well
+        for side in (-1.0, 1.0):
+            with self.subTest(side=side):
+                state = stateWith(still((side, 0.2, 0.0)))
+                state["ControlFrame"].update({"rndpos": 0.6, "graindur": 400, "graindev": 0.5})
+                samples, rate = renderState(state, dur=4.0, output="Ambisonics", order=1)
+                hop = rate // 4
+                levels = [float(np.sqrt(np.mean(samples[0, i * hop:(i + 1) * hop] ** 2)))
+                          for i in range(1, samples.shape[1] // hop)]
+                self.assertGreater(min(levels), 0.003, levels)
 
     def test_room_reverb_comes_from_all_round(self):
         dry, rate = renderState(stateWith(still(roomAt(0, 0))), dur=2.0, output="Ambisonics", order=1)

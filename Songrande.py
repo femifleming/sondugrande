@@ -30,6 +30,11 @@ import sys
 def main():
     """Launch Songrande, optionally opening a project supplied on the command line."""
     args = sys.argv[1:]
+    # a windowed program on Windows has no console to write to
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
     if args and args[0] == "--render":
         from songrande import render
         return render.main(args[1:])

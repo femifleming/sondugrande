@@ -1,9 +1,10 @@
 FX Balls
 ========
 
-FxBalls allow the user to add effect regions on the drawing surface. Only the
-trajectories that cross a ball (and only for the time that the trajectory is
-inside the ball) will send their audio output through the chosen effect.
+FxBalls allow the user to add effect regions in the room. A ball is a sphere:
+only the trajectories that cross it (and only for the time that the trajectory
+is inside the ball) will send their audio output through the chosen effect,
+and the effect's sound comes out from where the ball is.
 
 This section provides documentation about the effects available with the 
 FX balls.
@@ -12,7 +13,8 @@ See the mouse bindings on [Surface page](02_surface.md) for the detail about
 how to interact graphically with the balls.
 
 A right-click on the ball opens the parameter window for the chosen effects.
-All effects provides controls for the amplitude and the panning of the effect.
+All effects provides controls for the amplitude and the spread of the effect
+(0: a point at the ball's centre, 1: from all round you).
 The first two sliders on the window are related to the chosen effect.
 ______________________________________________________________________________
 

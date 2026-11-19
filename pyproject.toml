@@ -2,31 +2,38 @@
 requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
+# One distribution with both applications: Songrande, and the SoundGrain it
+# was developed from (Olivier Belanger's, unchanged, as the soundgrain_resources
+# package exactly as SoundGrain's own pyproject installs it).
 [project]
-name = "soundgrain"
+name = "songrande"
 dynamic = ["version"]
-description = "Graphical interface for granular sound synthesis"
-readme = "README.rst"
+description = "SoundGrain in a room: draw where granular sound moves in space (Ambisonics, binaural, loudspeakers)"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-or-later"
-license-files = ["scripts/COPYING.txt"]
-dependencies = ["pyo", "wxPython", "markdown"]
+license-files = ["LICENSE"]
+authors = [{name = "Olivier Belanger (SoundGrain)"}, {name = "femifleming (Songrande)"}]
+dependencies = ["pyo>=1.1.0", "wxPython", "markdown", "numpy"]
 
 [project.scripts]
+songrande = "Songrande:main"
 soundgrain = "SoundGrain:main"
 soundgrain-register-desktop = "soundgrain_resources.desktop:main"
 
 [project.urls]
-Homepage = "https://github.com/belangeo/soundgrain"
+Homepage = "https://github.com/femifleming/songrande"
+SoundGrain = "https://github.com/belangeo/soundgrain"
 
 [tool.setuptools]
-packages = ["soundgrain_resources"]
-package-dir = {soundgrain_resources = "Resources"}
-py-modules = ["SoundGrain"]
+packages = ["soundgrain_resources", "songrande"]
+package-dir = {soundgrain_resources = "Resources", songrande = "songrande"}
+py-modules = ["SoundGrain", "Songrande"]
 include-package-data = false
 
 [tool.setuptools.dynamic]
-version = {attr = "soundgrain_resources.constants.SG_VERSION"}
+version = {attr = "songrande.constants.SG_VERSION"}
 
 [tool.setuptools.package-data]
 soundgrain_resources = ["*.png", "*.ico", "*.icns", "*.sg", "images/*.png", "doc/*.md"]
+songrande = ["*.png", "*.ico", "*.sgr", "images/*.png", "doc/*.md"]

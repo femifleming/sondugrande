@@ -108,17 +108,63 @@ class Scene:
         self.wanderPeriodicity = 0.0
         self.xSource = 0
         self.ySource = 0
+        self.flock = 0.0           # 0: every ball stays on its line; 1: they fly as a flock
+        self.boids = {}            # stream -> [position, velocity] of its ball when flocking
         self.traj = None
 
     # ------------------------------------------------------------------
     # the clock: called by the sound engine, once per timer tick of a stream
     # ------------------------------------------------------------------
+    def flockPosition(self, t, target):
+        """Where a stream sounds when the balls flock (after the boids of openfield).
+
+        Each ball is a bird on a leash to its own trajectory's point: it is
+        pulled towards that point, towards the middle of the others and along
+        with them, and pushed away from any that come too near. 'flock' is how
+        much of this flight is heard: at 0 the ball is on its line.
+        """
+        if self.flock <= 0.0:
+            self.boids.pop(t.getId(), None)
+            t.soundPos = None
+            return target
+        dt = min(0.1, max(0.001, t.getTimeSpeed() * 0.001))
+        boid = self.boids.get(t.getId())
+        if boid is None:
+            boid = self.boids[t.getId()] = [list(target), [0.0, 0.0, 0.0]]
+        p, v = boid
+        others = [self.boids[i] for i in list(self.boids) if i != t.getId() and self.trajectories[i].getActive()]
+        acc = [(target[k] - p[k]) * 6.0 - v[k] * 2.2 for k in range(3)]        # the leash, and the air
+        if others:
+            n = float(len(others))
+            for k in range(3):
+                centre = sum(o[0][k] for o in others) / n
+                heading = sum(o[1][k] for o in others) / n
+                acc[k] += (centre - p[k]) * 2.0 + (heading - v[k]) * 0.8       # together, and the same way
+            for o in others:
+                gap = _sub(p, o[0])
+                dist = _length(gap)
+                if 1e-6 < dist < 90.0:
+                    push = (90.0 - dist) / dist * 12.0
+                    for k in range(3):
+                        acc[k] += gap[k] * push                                # not too close
+        for k in range(3):
+            v[k] += acc[k] * dt
+            p[k] += v[k] * dt
+        clipped = space.clip_canvas(p)
+        for k in range(3):
+            if clipped[k] != p[k]:
+                p[k], v[k] = clipped[k], 0.0
+        out = space.clip_canvas(tuple(target[k] + (p[k] - target[k]) * self.flock for k in range(3)))
+        t.soundPos = out
+        return out
+
     def clock(self, which):
         t = self.trajectories[which]
         t.clock()
         if t.getActive() and self.audio is not None:
             pos = t.getPointPos()
             if pos is not None:
+                pos = self.flockPosition(t, pos)
                 x, y = space.grain_xy(pos, t.getPhase(), self.xSource, self.ySource)
                 # Y first: the place in the sound takes the grains' pitch and length into account
                 self.audio.setYposition(which, y)

@@ -1064,6 +1064,8 @@ class Surface3D(wx.Panel):
         gc.SetFont(self.font, wx.Colour(20, 20, 20))
         gc.SetPen(self.mkpen((200, 200, 200), 255))
         gc.SetBrush(wx.Brush(wx.Colour(200, 200, 200)))
+        channels = [channel for channel, p in speakers]
+        speakers = [p for channel, p in speakers]
         pts = self.P([turn(p) for p in speakers])
         floor = self.P([turn((p[0], p[1], 0.0)) for p in speakers])
         gc.SetPen(self.mkpen((200, 200, 200), 60))
@@ -1072,7 +1074,7 @@ class Surface3D(wx.Panel):
         gc.SetPen(self.mkpen((200, 200, 200), 255))
         for index, (x, y) in enumerate(pts):
             gc.DrawRectangle(x - 6, y - 6, 12, 12)
-            label = str(index + 1)
+            label = str(channels[index])
             tw, th = gc.GetTextExtent(label)[:2]
             gc.DrawText(label, x - tw / 2.0, y - th / 2.0)
 
@@ -1150,7 +1152,8 @@ class Surface3D(wx.Panel):
     def drawPlayheads(self, gc, dc=None):
         activeTrajs = [t for t in self.getActiveTrajectories() if len(t.getPoints()) > 1 and t.circlePos]
         for t in activeTrajs:
-            pos = t.circlePos
+            # the ball is where the sound is: on its line, or off it when the balls flock
+            pos = t.soundPos or t.circlePos
             if pos is None:
                 continue
             try:
@@ -1238,14 +1241,17 @@ class Surface3D(wx.Panel):
         tw, th = gc.GetTextExtent(text)[:2]
         gc.DrawText(text, w - tw - 8, h - th - 4)
 
-    def draw(self, dc, overlay=True):
-        """Paint the whole room into a device context."""
-        width, height = dc.GetSize() if not isinstance(dc, wx.PaintDC) else self.GetClientSize()
-        width, height = self.GetClientSize() if self.GetClientSize().width > 0 else (width, height)
+    def draw(self, dc, overlay=True, scale=1.0):
+        """Paint the whole room into a device context (scale: for a larger picture of it)."""
+        width, height = self.GetClientSize()
+        if width <= 0 or height <= 0:
+            width, height = dc.GetSize()
         self.camera.setSize(width, height)
         dc.SetBackground(wx.Brush(self.backgroundcolor))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
+        if scale != 1.0:
+            gc.Scale(scale, scale)
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
         self.drawRoom(gc)
         self.drawWaveform(gc)
@@ -1268,12 +1274,12 @@ class Surface3D(wx.Panel):
             traceback.print_exc()
         self.needBitmap = False
 
-    def snapshot(self, path, size=None):
+    def snapshot(self, path, scale=1.0):
         """Save a picture of the room as a PNG (used by the self-test and the manual)."""
-        w, h = size or tuple(self.GetClientSize())
-        bitmap = wx.Bitmap(int(w), int(h))
+        w, h = tuple(self.GetClientSize())
+        bitmap = wx.Bitmap(max(1, int(w * scale)), max(1, int(h * scale)))
         dc = wx.MemoryDC(bitmap)
-        self.draw(dc, overlay=True)
+        self.draw(dc, overlay=True, scale=scale)
         dc.SelectObject(wx.NullBitmap)
         bitmap.SaveFile(path, wx.BITMAP_TYPE_PNG)
         return path

@@ -28,7 +28,11 @@ from .Surface3D import Surface3D
 from .ControlPanel import ControlPanel
 from .SpaceFrame import SpaceFrame
 from .scene import legacyFactors
+from .audio import SPACE_DEFAULTS
 from . import space, ambi
+
+# the part of the space that says where the sound goes
+FORMAT_KEYS = ("output", "order", "layout", "customLayout", "customLayoutName", "recordBus")
 
 if sys.version_info[0] < 3:
     import xmlrpclib
@@ -186,14 +190,16 @@ class MainFrame(wx.Frame):
 
         # the room: where you look from and what the pen draws on
         self.menuView = wx.Menu()
+        # single letters are read by the room itself (so that typing a file name
+        # does not change the view): they are shown here, not made accelerators
         for i, name in enumerate(space.VIEWS):
-            self.menuView.Append(3000 + i, "%s view\t%s" % (name, "PTFS"[i]), "", wx.ITEM_RADIO)
+            self.menuView.Append(3000 + i, "%s view   (%s)" % (name, "PTFS"[i]), "", wx.ITEM_RADIO)
             self.Bind(wx.EVT_MENU, self.handleView, id=3000 + i)
-        self.menuView.Append(3010, "Reset view\tEsc", "")
+        self.menuView.Append(3010, "Reset view   (Esc)", "")
         self.Bind(wx.EVT_MENU, self.handleView, id=3010)
         self.menuView.AppendSeparator()
         for i, name in enumerate(DRAW_SURFACES):
-            self.menuView.Append(3020 + i, "Draw on the %s" % name.lower(), "", wx.ITEM_RADIO)
+            self.menuView.Append(3020 + i, "Draw on the %s   (G)" % name.lower(), "", wx.ITEM_RADIO)
             self.Bind(wx.EVT_MENU, self.handleDrawOn, id=3020 + i)
         self.menuBar.Append(self.menuView, "&View")
 
@@ -322,7 +328,7 @@ class MainFrame(wx.Frame):
                 try:
                     saved = json.loads(line.split("=", 1)[1])
                     # the output format is a property of this computer's set-up
-                    for key in ("output", "order", "layout", "customLayout", "customLayoutName", "recordBus"):
+                    for key in FORMAT_KEYS:
                         if key in saved:
                             self.sg_audio.space[key] = saved[key]
                 except (ValueError, TypeError):
@@ -750,6 +756,12 @@ class MainFrame(wx.Frame):
             self.panel.setViewState(dict.get("View", {}))
         else:
             self.controls.setSamplingRate(dict['ControlPanel'].get('sr', 44100))
+            # the room as it is when new, heard the way this computer is set up,
+            # and seen from above: there it looks as it did in SoundGrain
+            fresh = SPACE_DEFAULTS.copy()
+            fresh.update({key: self.sg_audio.space[key] for key in FORMAT_KEYS})
+            self.spaceControls.load(fresh)
+            self.panel.setViewState({"view": "Top"})
         self.syncViewMenu()
         ### Main Frame ###
         self.setDraw(dict['MainFrame']['draw'])
@@ -837,6 +849,9 @@ class MainFrame(wx.Frame):
             self.currentFile = path
             self.currentPath = os.path.split(path)[0]
             title = '%s %s - %s' % (NAME, SG_VERSION, os.path.split(self.currentFile)[1])
+        if NEW_FILE in path and "Space" in dict:
+            # a new project keeps the output this computer is set up for
+            dict["Space"].update({key: self.sg_audio.space[key] for key in FORMAT_KEYS})
         self.panel.resetTrajectories()
         self.controls.setSelected(0)
         self.setState(dict)

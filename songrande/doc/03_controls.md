@@ -11,7 +11,7 @@ the mono recording fills the table. Recording stops when the table is full;
 click __Mic Stop__ to stop earlier and keep the captured sound. __Mic__ and
 __Start__ both start the audio server, and playback can run during capture.
 Captured audio is unsaved until exported when prompted. If the input device
-cannot be opened, SoundGrain falls back to output-only audio when possible.
+cannot be opened, Songrande falls back to output-only audio when possible.
  
 ______________________________________________________________________________
 
@@ -25,13 +25,20 @@ The dropdown menu gives the possible type of trajectories:
 - Oscil: Draw oscillations using period and scaling factors adjusted in the 
 drawing tab.
 - Line: Draw a straight line.
+- Spiral: Draw a spiral round the place you press, climbing along the line
+square to the drawing surface. _Oscil period_ is its number of turns and
+_Oscil scaling_ how high it climbs (in radii of the spiral).
+
+Under it, __Draw on__ chooses what the pen draws on (the floor, the sphere or
+the plane facing you) and __View__ where the room is seen from. See
+[The Room](02_surface.md).
 
 In free-hand style, if the __Closed__ button is activated, the last point will
 be automatically connected to the first on mouse up.
 
 The __Var__ tab between __Draw__ and __Play__ contains three sliders:
 
-- __Width__: pen width from 2 to 500 pixels, defaulting to 2.
+- __Width__: pen width from 2 to 500 units (the floor is 1000 wide), defaulting to 2.
 - __Variation speed__: the speed of the smooth sideways variation, from 0.1x
   to 10x. The default of 1x is normal speed; lower values drift more slowly and
   higher values drift faster. This does not change progress along the line.
@@ -52,6 +59,14 @@ trajectories.
 Each trajectory saves its width, random speed and periodicity independently in the project.
 Copies and memorized trajectories retain all three settings. New trajectories start
 with the values currently displayed in __Var__.
+
+The __3D__ tab holds the __Pen height__ (the height of the floor the pen draws
+on: 0 is ear level, 1 the top of the loudspeaker sphere) and the __Sphere radius__
+(1 is the loudspeaker sphere).
+
+In the room a wide trajectory is a tube: the playback ball wanders across the
+line and, a quarter turn later, above and below it. With a periodic variation
+it corkscrews round the line.
 
 At the default width of 2, playback follows the centerline exactly. Wider
 trajectories appear as translucent bands. Self-crossings retain the same color
@@ -109,6 +124,11 @@ making the playback doing longer jumps.
 
 The slider labelled __Amplitude (dB)__ controls the gain of the selected trajectory.
 This allow the user to adjust the volume of the trajectories relative to each other.
+
+__Direction__ chooses which way the selected trajectory is walked: _Forward_ (to
+its end, then again from its start, as in SoundGrain), _Backward_, or
+_Back and forth_ (to its end and back the way it came, so the sound never jumps
+across the room).
 
 ______________________________________________________________________________
 

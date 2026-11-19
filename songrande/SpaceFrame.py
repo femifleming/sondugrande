@@ -28,6 +28,7 @@ SLIDERS = [
     ("reverbTime", "Room Reverb Time", 0.0, 1.0, 0.6, False, False),
     ("turn", "Scene Turn (degrees to the left)", -180.0, 180.0, 0.0, False, False),
     ("turnSpeed", "Scene Turning Speed (degrees per second)", -90.0, 90.0, 0.0, False, False),
+    ("flock", "Flock: the balls leave their lines and fly together", 0.0, 1.0, 0.0, False, False),
     ("glide", "Motion: steps with the timer <--> glides", 0.0, 1.0, 1.0, False, False),
 ]
 
@@ -138,6 +139,8 @@ class SpaceFrame(wx.Frame):
                 return
             self.values[name] = x
             self.sg_audio.setSpace(name, x)
+            if name == "flock":
+                self.parent.panel.scene.flock = float(x)
             if fromSlider:
                 self.parent.is_unsaved = True
             if name in ("turn", "turnSpeed"):
@@ -166,6 +169,8 @@ class SpaceFrame(wx.Frame):
             self.values[name] = value
             self.sliders[name].SetValue(value, False)
             self.sg_audio.setSpace(name, value)
+            if name == "flock":
+                self.parent.panel.scene.flock = value
             self.sliders[name].setMidiBinding(d.get(name + "_m", None))
         for attr in ("xSource", "ySource"):
             index = int(d.get(attr, 0))

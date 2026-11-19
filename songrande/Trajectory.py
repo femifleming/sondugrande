@@ -120,6 +120,7 @@ class Trajectory:
         self.mario = 0
         self.lastCirclePos = (0, 0, 0)
         self.circlePos = None
+        self.soundPos = None       # where its sound is, if that is not circlePos (the flock)
         self.counter = 0
         self.lastIndex = 0
         self.filterCut = 5000
@@ -289,6 +290,7 @@ class Trajectory:
         self.initPoints = []
         self.points = []
         self.circlePos = None
+        self.soundPos = None
         self.setTranspo(1.)
 
     def getAttributes(self):

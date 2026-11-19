@@ -1,3 +1,6 @@
 include whatsnew.md
+include SoundGrain-README.rst
+include REQUESTS.md
 recursive-include Resources *.py *.png *.ico *.icns *.sg *.md
+recursive-include songrande *.py *.png *.ico *.sgr *.md
 global-exclude *.py[cod] __pycache__

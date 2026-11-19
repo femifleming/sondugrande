@@ -91,6 +91,7 @@ def buildEngine(state, sound=None, overrides=None, sr=None, backend="offline"):
         audio.space.update(overrides)
     scene.xSource = int(audio.space.get("xSource", 0))
     scene.ySource = int(audio.space.get("ySource", 0))
+    scene.flock = float(audio.space.get("flock", 0.0))
     panel = state.get("ControlPanel", {})
     audio.boot(None, 0, int(sr or panel.get("sr", 44100)))
     envelope = state.get("Envelope", {}).get("envelope")
@@ -126,7 +127,14 @@ def render(state, out, dur=10.0, sound=None, overrides=None, sr=None, sampletype
     the output is something else. Returns (path, channels).
     """
     if isinstance(state, str):
+        folder = os.path.dirname(os.path.abspath(state))
         state = loadProject(state)
+        # as in the application: a sound that is not where the project says is looked for beside the project
+        named = state.get("ControlPanel", {}).get("sound", "")
+        if sound is None and named and not os.path.isfile(named):
+            beside = os.path.join(folder, os.path.basename(named.replace("\\", "/")))
+            if os.path.isfile(beside):
+                sound = beside
     overrides = dict(overrides or {})
     if recordBus:
         overrides.update({"output": "Ambisonics"})

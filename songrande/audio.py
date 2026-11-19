@@ -76,6 +76,7 @@ SPACE_DEFAULTS = {
     "reverbTime": 0.6,         # 0..1, how long the room rings
     "turn": 0.0,               # degrees: the whole scene turned about the listener
     "turnSpeed": 0.0,          # degrees per second
+    "flock": 0.0,              # 0 = every stream on its trajectory, 1 = they fly as a flock (boids)
     "glide": 1.0,              # 0 = positions step with the timer, 1 = glide from tick to tick
     "xSource": 0,              # what picks the place in the sound (space.X_SOURCES)
     "ySource": 0,              # what drives the Y-axis parameters (space.Y_SOURCES)
@@ -149,7 +150,21 @@ class Fx:
         elif fx == 5:
             self.process = Degrade(self.input, bitdepth=8, srscale=0.25)
         elif fx == 6:
-            self.process = Harmonizer(self.input, transpo=-7, feedback=0.25)
+            # A harmonizer made of its parts: two delay lines swept by a ramp, half
+            # a window apart, cross-faded. (pyo's own Harmonizer object, which
+            # SoundGrain uses and which works the same way, gives out no numbers at
+            # all on some systems, and one NaN in the bus silences everything.)
+            self.winsize = 0.1
+            self.fbk = SigTo(value=0.25, time=0.05, init=0.25)
+            self.loop = Sig(0)                               # what comes back, one block late
+            self.hsrc = self.input + self.loop
+            self.hrate = SigTo(value=self.harmonizerRate(-7), time=0.05, init=self.harmonizerRate(-7))
+            self.hpos = Phasor(freq=self.hrate, phase=[0, 0.5])
+            self.htable = HannTable()
+            self.hwin = Pointer(table=self.htable, index=self.hpos)
+            self.hdel = Delay(self.hsrc, delay=self.hpos * self.winsize, maxdelay=self.winsize + 0.05, mul=self.hwin)
+            self.process = Mix(self.hdel, voices=1)
+            self.loop.value = self.process * self.fbk
         elif fx == 7:
             self.clip = Clip(self.input, min=-0.1, max=0.1, mul=3.3)
             self.process = ButLP(self.clip, freq=5000)
@@ -166,6 +181,10 @@ class Fx:
         self.enc = SigTo(value=[0.0] * nch, time=0.05, init=0.0, mul=self.out)
         # kept for SoundGrain's name: what goes to the bus
         self.pan = self.enc
+
+    def harmonizerRate(self, semitones):
+        """How fast the delays must sweep to transpose by that many semitones."""
+        return -(pow(2.0, float(semitones) / 12.0) - 1.0) / self.winsize
 
     def setGains(self, gains):
         for obj, value in zip(self.enc._base_objs, gains):
@@ -190,7 +209,10 @@ class Granulator_Stream:
         self.clock_func = clock_func
         self.nch = nch
         self.granulator = None
-        self.chain = []
+        self.pointChain = []
+        self.cloudChain = []
+        self.scattered = False
+        self.playing = False
         self.placed = False
         self.glide = 0.025
         self.transpoValue = 1.0
@@ -254,14 +276,25 @@ class Granulator_Stream:
                                     ).stop()
         # the whole stream as one signal: what the FX balls and the room hear
         self.mono = Mix(self.granulator, voices=1).stop()
-        # the CLOUD points, each delayed and filtered for its distance
+        # Two ways into the bus, of which one runs at a time.
+        # The point: without scatter every grain is at the trajectory's point, so
+        # the stream is one signal, delayed and filtered for its distance, with
+        # one set of gains.
+        self.delay1 = Delay(self.mono, delay=self.dly, maxdelay=1.0).stop()
+        self.air1 = Tone(self.delay1, freq=self.airfreq).stop()
+        self.enc1 = SigTo(value=[0.0] * self.nch, time=self.glide, init=0.0, mul=self.air1).stop()
+        self.pointChain = [self.delay1, self.air1, self.enc1]
+        # The cloud: with scatter the CLOUD outputs of the granulator are CLOUD
+        # places round that point, each with its own gains (four times the work).
         self.cloud = Mix(self.granulator, voices=CLOUD).stop()
         self.delay = Delay(self.cloud, delay=self.dly, maxdelay=1.0).stop()
         self.air = Tone(self.delay, freq=self.airfreq).stop()
         self.enc = [SigTo(value=[0.0] * self.nch, time=self.glide, init=0.0, mul=self.air[k]).stop()
                     for k in range(CLOUD)]
         self.encoded = Mix(self.enc, voices=self.nch).stop()
-        self.chain = [self.mono, self.cloud, self.delay, self.air] + self.enc + [self.encoded]
+        self.cloudChain = [self.cloud, self.delay, self.air] + self.enc + [self.encoded]
+        self.scattered = False
+        self.playing = False
         self.placed = False
         self.lastGains = None
 
@@ -282,19 +315,35 @@ class Granulator_Stream:
         self.glide = seconds
         self.dly.time = seconds
         self.airfreq.time = seconds
-        for enc in getattr(self, "enc", []):
+        for enc in self.encoders():
             enc.time = seconds
 
+    def encoders(self):
+        if not hasattr(self, "enc1"):
+            return []
+        return [self.enc1] + self.enc
+
     def setSpatial(self, gains, delay, cutoff):
-        """gains: array (CLOUD, channels)."""
+        """gains: array (1, channels) for a point, (CLOUD, channels) for a scattered stream."""
+        scattered = len(gains) > 1
+        if scattered != self.scattered:
+            # the scatter was turned on or off: change over to the other way into the bus
+            self.scattered = scattered
+            if self.playing:
+                for obj in (self.pointChain if scattered else self.cloudChain):
+                    obj.stop()
+                for obj in (self.cloudChain if scattered else self.pointChain):
+                    obj.play()
+            self.placed = False
+        targets = self.enc if scattered else [self.enc1]
         if not self.placed:
             # first position: be there at once, don't fly in from nowhere
             self.dly.time = 0.001
-            for enc in self.enc:
+            for enc in targets:
                 enc.time = 0.001
-        for k in range(CLOUD):
+        for k, enc in enumerate(targets):
             row = gains[k].tolist()
-            for obj, value in zip(self.enc[k]._base_objs, row):
+            for obj, value in zip(enc._base_objs, row):
                 obj.setValue(value)
         self.dly.value = delay
         self.airfreq.value = cutoff
@@ -315,8 +364,10 @@ class Granulator_Stream:
             self.y_fqr.play()
             self.cloud_pick.play()
             self.granulator.play()
-            for obj in self.chain:
+            self.mono.play()
+            for obj in (self.cloudChain if self.scattered else self.pointChain):
                 obj.play()
+            self.playing = True
             self.fader.value = 1
         else:
             self.fader.value = 0
@@ -334,8 +385,10 @@ class Granulator_Stream:
         self.y_fqr.stop()
         self.cloud_pick.stop()
         self.granulator.stop()
-        for obj in self.chain:
+        self.mono.stop()
+        for obj in self.pointChain + self.cloudChain:
             obj.stop()
+        self.playing = False
         self.placed = False
 
 
@@ -362,6 +415,7 @@ class SG_Audio:
         self.bindings = {}
         self.space = dict(SPACE_DEFAULTS)
         self.basePitchValue = 1.0
+        self.randPosValue = 0.0
         self.grainDurValue = 0.2
         self.tableDur = 1.0
         self.order = 3
@@ -412,13 +466,13 @@ class SG_Audio:
         return 2
 
     def speakerDirections(self):
-        """Room-frame unit vectors of what the bus is decoded to (for the 3D view)."""
+        """What the bus is decoded to, for the 3D view: [(output channel, room-frame unit vector), ...]."""
         mode = self.space["output"]
         if mode == "Speakers":
-            dirs = [d for d in ambi.layout_dirs(self.getLayout()) if d is not None]
-            return [tuple(space.ambi_to_room(d)) for d in dirs]
+            return [(index + 1, tuple(space.ambi_to_room(d)))
+                    for index, d in enumerate(ambi.layout_dirs(self.getLayout())) if d is not None]
         if mode == "Stereo":
-            return [(-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)]
+            return [(1, (-1.0, 0.0, 0.0)), (2, (1.0, 0.0, 0.0))]
         return []
 
     def setSpace(self, name, value):
@@ -429,6 +483,7 @@ class SG_Audio:
             return
         if name == "reverb":
             self.rev_level.value = float(value)
+            self._runReverb(float(value) > 0.0)
         elif name == "reverbTime":
             self._setReverbTime(float(value))
         elif name == "glide":
@@ -446,6 +501,17 @@ class SG_Audio:
         period = float(stream.metro.time)
         glide = float(self.space["glide"])
         return max(0.003, min(period, 0.4) * glide)
+
+    def _runReverb(self, on):
+        """The room only works when it is heard."""
+        if on == self.reverbRunning:
+            return
+        self.reverbRunning = on
+        for obj in [self.rev_pre] + self.rev_taps + self.revs + self.rev_enc + [self.rev_out]:
+            if on:
+                obj.play()
+            else:
+                obj.stop()
 
     def _setReverbTime(self, x):
         x = max(0.0, min(1.0, x))
@@ -494,7 +560,7 @@ class SG_Audio:
                 wobble.append(0.5 + 0.5 * math.sin(st.wobblePhase[k]))
             pts = space.scatter_ring(p, angle, CLOUD, st.ringTurn, wobble)
         else:
-            pts = np.repeat(p[None, :], CLOUD, axis=0)
+            pts = p[None, :]
         gains = ambi.encode(pts, self.order, self.space["spread"]) * gain
         st.setSpatial(gains, delay, cutoff)
 
@@ -598,6 +664,8 @@ class SG_Audio:
         self.rev_enc = [Sig(self.revs[i], mul=rev_gains[i].tolist()) for i in range(4)]
         # four streams (W, Y, Z, X): it must stay the last thing patched into the bus
         self.rev_out = Mix(self.rev_enc, voices=4)
+        self.reverbRunning = True
+        self._runReverb(float(self.space["reverb"]) > 0.0)
 
         # the Ambisonic bus
         self.stream_sum = Sig([0] * nch)
@@ -633,8 +701,20 @@ class SG_Audio:
             filters, signs = binauralFilters(order, self.samplingRate)
             count = ambi.nch(order)
             taps = filters.shape[1]
-            self.hrirTables = [DataTable(size=taps, init=filters[k].tolist()) for k in range(count)]
-            self.convs = [Convolve(self.bus[k], self.hrirTables[k], size=taps) for k in range(count)]
+            # The lows, which need the whole length, are all in the omni channel's
+            # filter; the others have under a five-hundredth of their energy past
+            # five eighths of it and are cut there (a third less work).
+            short = max(16, int(taps * 0.625))
+            fade = 0.5 * (1.0 + np.cos(np.linspace(0, math.pi, 8)))
+            self.hrirTables = []
+            self.convs = []
+            for k in range(count):
+                size = taps if k == 0 else short
+                taps_k = np.array(filters[k, :size])
+                if size < taps:
+                    taps_k[-8:] *= fade
+                self.hrirTables.append(DataTable(size=size, init=taps_k.tolist()))
+                self.convs.append(Convolve(self.bus[k], self.hrirTables[k], size=size))
             self.left = Mix(self.convs, voices=1)
             self.right = Mix([Sig(self.convs[k], mul=float(signs[k])) for k in range(count)], voices=1)
             self.output = Mix([self.left, self.right], voices=2)
@@ -734,7 +814,8 @@ class SG_Audio:
     def patchBus(self):
         """(Re)connect everything that feeds the bus and the room."""
         ready = [st for st in self.streams.values() if st.granulator is not None]
-        sources = [st.encoded for st in ready] + [f.enc for f in self.fxs.values()] + [self.rev_out]
+        sources = [st.enc1 for st in ready] + [st.encoded for st in ready] \
+            + [f.enc for f in self.fxs.values()] + [self.rev_out]
         self.stream_sum.value = Mix(sources, voices=self.nch)
         if ready:
             self.rev_in.value = Mix([st.mono for st in ready], voices=1)
@@ -853,6 +934,7 @@ class SG_Audio:
 
     def setRandPos(self, x):
         x = floatmap(x, min=0, max=0.5, exp=2)
+        self.randPosValue = x
         self.pos_noise.mul = x
 
     def setRandPit(self, x):
@@ -908,14 +990,20 @@ class SG_Audio:
             return
         if self.streams[which].granulator is None:
             return
-        # A grain that would run past the end of the sound is not played at all,
-        # so in SoundGrain a trajectory falls silent at the right edge of the
-        # surface. Here that edge is a wall of the room: hold the place in the
-        # sound at the last one a whole grain still fits after.
+        # A grain that would start before the sound or run past its end is not
+        # played at all, so in SoundGrain a trajectory drops out at the edges
+        # of the surface.
+        # Here those edges are walls of the room: hold the place in the sound
+        # where a whole grain still fits, the random part of its place included.
         st = self.streams[which]
         pitch = abs(self.basePitchValue * st.transpoValue * st.yValues.get("y_pit", 1.0))
         need = self.grainDurValue * st.yValues.get("y_len", 1.0) * pitch * 1.15 / max(self.tableDur, 1e-6)
-        st.position.value = min(max(x, 0.0), max(0.0, 0.997 - need))
+        jitter = (abs(self.randPosValue) + abs(st.yValues.get("y_pos", 0.0))) * 1.02
+        low = jitter
+        high = 0.997 - need - jitter
+        if high < low:
+            low = high = max(0.0, min(0.997 - need, 0.5 * (low + high)))
+        st.position.value = min(max(x, low), high)
 
     def setYposition(self, which, x):
         if not getattr(self, "streams", None):
@@ -1009,7 +1097,7 @@ class SG_Audio:
         elif fx == 5:
             self.fxs[key].process.bitdepth = val
         elif fx == 6:
-            self.fxs[key].process.transpo = val
+            self.fxs[key].hrate.value = self.fxs[key].harmonizerRate(val)
         elif fx == 7:
             self.fxs[key].clip.min = -val
             self.fxs[key].clip.max = val
@@ -1033,7 +1121,7 @@ class SG_Audio:
         elif fx == 5:
             self.fxs[key].process.srscale = val
         elif fx == 6:
-            self.fxs[key].process.feedback = val
+            self.fxs[key].fbk.value = min(float(val), 0.98)
         elif fx == 7:
             self.fxs[key].process.freq = val
         elif fx == 8:
