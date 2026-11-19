@@ -1,5 +1,5 @@
 """
-Songrande - the geometry of the room: coordinates, camera, pointer rays,
+Sondugrande - the geometry of the room: coordinates, camera, pointer rays,
 distance cues and the mapping from a point in space to SoundGrain's X and Y.
 No GUI and no audio in here, so everything can be tested headless.
 
@@ -16,7 +16,7 @@ Three coordinate frames are used:
   units of the sphere's radius. This is what the 3D view draws.
 * ambi    (x front, y left, z up): the Ambisonic convention of ambi.py.
 
-This file is part of Songrande, a derivative of SoundGrain (Olivier Belanger),
+This file is part of Sondugrande, a derivative of SoundGrain (Olivier Belanger),
 released under the GNU General Public License version 3 or later.
 """
 import math

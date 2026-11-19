@@ -1,4 +1,4 @@
-# Songrande's icon in the house style of the author's other applications:
+# Sondugrande's icon in the house style of the author's other applications:
 # one Septambres Neau glyph, one colour on one colour, macOS rounded tile.
 # The glyph is the font's "g", a square: SoundGrain's red handle of a
 # trajectory, in SoundGrain's red on the grey of its drawing surface.
@@ -37,16 +37,16 @@ def icon(size=1024, full=False):
 
 if __name__ == "__main__":
     big = icon(1024)
-    big.save(os.path.join(HERE, "Songrande.png"))
+    big.save(os.path.join(HERE, "Sondugrande.png"))
     icon(256).save(os.path.join(HERE, "..", "docs", "icon.png"))
-    big.save(os.path.join(HERE, "Songrande.ico"), sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
+    big.save(os.path.join(HERE, "Sondugrande.ico"), sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
     if sys.platform == "darwin":
-        iconset = os.path.join(HERE, "Songrande.iconset")
+        iconset = os.path.join(HERE, "Sondugrande.iconset")
         os.makedirs(iconset, exist_ok=True)
         for s in (16, 32, 128, 256, 512):
             icon(s).save(os.path.join(iconset, "icon_%dx%d.png" % (s, s)))
             icon(s * 2).save(os.path.join(iconset, "icon_%dx%d@2x.png" % (s, s)))
-        subprocess.check_call(["iconutil", "-c", "icns", iconset, "-o", os.path.join(HERE, "Songrande.icns")])
+        subprocess.check_call(["iconutil", "-c", "icns", iconset, "-o", os.path.join(HERE, "Sondugrande.icns")])
         for name in os.listdir(iconset):
             os.remove(os.path.join(iconset, name))
         os.rmdir(iconset)

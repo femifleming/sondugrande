@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Build and check Songrande and SoundGrain on Ubuntu 22.04 (the continuous
+# Build and check Sondugrande and SoundGrain on Ubuntu 22.04 (the continuous
 # integration runs this; so does `docker run ubuntu:22.04` on another system).
 #   packaging/build_linux.sh [python]        python defaults to python3
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PY="${1:-python3}"
 
-if [ "${SONGRANDE_APT:-1}" = "1" ]; then
+if [ "${SONDUGRANDE_APT:-1}" = "1" ]; then
   SUDO=""; [ "$(id -u)" != "0" ] && SUDO="sudo"
   export DEBIAN_FRONTEND=noninteractive
   $SUDO apt-get update -qq
@@ -39,7 +39,7 @@ if [ -n "$missing" ]; then echo "missing system libraries: $missing"; exit 1; fi
 "$PY" packaging/probe_pyo.py 2>&1 | grep -v -i "portmidi\|wxpython\|toolkit\|maintained\|gui\|^$\|Pyo message" || true
 
 echo "== tests"
-xvfb-run -a "$PY" -m unittest discover -s tests -p "test_songrande*.py"
+xvfb-run -a "$PY" -m unittest discover -s tests -p "test_sondugrande*.py"
 # SoundGrain's own tests (two of them assume Linux paths, so they run here)
 xvfb-run -a "$PY" -m unittest discover -s tests -p "test_[!s]*.py" || [ "${SOUNDGRAIN_TESTS_REQUIRED:-1}" != "1" ]
 

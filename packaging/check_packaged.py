@@ -2,8 +2,8 @@
 
     python packaging/check_packaged.py [folder for the self-test's files]
 
-Works the same on macOS (dist/*.app), Windows and Linux (dist/Songrande/):
-starts the packaged Songrande's self-test (it draws in the room, renders,
+Works the same on macOS (dist/*.app), Windows and Linux (dist/Sondugrande/):
+starts the packaged Sondugrande's self-test (it draws in the room, renders,
 checks that the sound moves, saves and reloads) and the packaged SoundGrain's
 smoke check, waits for them, prints the self-test's report and returns 0 only
 if both passed. No audio device is needed.
@@ -21,8 +21,8 @@ def program(name):
     if sys.platform == "darwin":
         return os.path.join(DIST, name + ".app", "Contents", "MacOS", name)
     if sys.platform == "win32":
-        return os.path.join(DIST, "Songrande", name + ".exe")
-    return os.path.join(DIST, "Songrande", name)
+        return os.path.join(DIST, "Sondugrande", name + ".exe")
+    return os.path.join(DIST, "Sondugrande", name)
 
 
 def run(command, timeout=600):
@@ -45,11 +45,11 @@ def main():
     folder = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "out", "selftest"))
     failed = []
 
-    code = run([program("Songrande"), "--version"])
+    code = run([program("Sondugrande"), "--version"])
     if code != 0:
-        failed.append("Songrande --version (%d)" % code)
+        failed.append("Sondugrande --version (%d)" % code)
 
-    code = run([program("Songrande"), "--selftest", folder, "--offline", "--seconds", "4"])
+    code = run([program("Sondugrande"), "--selftest", folder, "--offline", "--seconds", "4"])
     report_path = os.path.join(folder, "report.json")
     if os.path.isfile(report_path):
         with open(report_path) as f:
@@ -59,11 +59,11 @@ def main():
         for error in report["errors"]:
             print(error)
         if not report.get("ok"):
-            failed.append("Songrande self-test: checks failed")
+            failed.append("Sondugrande self-test: checks failed")
     else:
-        failed.append("Songrande self-test: no report")
+        failed.append("Sondugrande self-test: no report")
     if code != 0:
-        failed.append("Songrande self-test (%d)" % code)
+        failed.append("Sondugrande self-test (%d)" % code)
 
     code = run([program("SoundGrain"), "--smoke"])
     if code != 0:
@@ -71,10 +71,10 @@ def main():
 
     # the offline renderer of the packaged program, on the example project
     out = os.path.join(folder, "demo_ambix.wav")
-    code = run([program("Songrande"), "--render", os.path.join(ROOT, "examples", "demo.sgr"), out,
+    code = run([program("Sondugrande"), "--render", os.path.join(ROOT, "examples", "demo.sgr"), out,
                 "--dur", "3", "--output", "Ambisonics", "--order", "3"])
     if code != 0 or not os.path.isfile(out) or os.path.getsize(out) < 16 * 3 * 44100 * 2:
-        failed.append("Songrande --render (%d)" % code)
+        failed.append("Sondugrande --render (%d)" % code)
     else:
         print("rendered %s (%.1f MB)" % (out, os.path.getsize(out) / 1e6))
 

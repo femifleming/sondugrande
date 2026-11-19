@@ -1,5 +1,5 @@
 // Lists the windows of a process: "id<TAB>width<TAB>height<TAB>title" per line.
-// Used by make_shots.py to photograph Songrande's own windows and nothing else.
+// Used by make_shots.py to photograph Sondugrande's own windows and nothing else.
 import CoreGraphics
 import Foundation
 let pid = Int32(CommandLine.arguments[1])!

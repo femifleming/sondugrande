@@ -1,4 +1,4 @@
-# Songrande's splash picture, after SoundGrain's: the same round window, the
+# Sondugrande's splash picture, after SoundGrain's: the same round window, the
 # waveform now a floor seen in perspective and the red trajectory leaving it.
 #
 #   python3 packaging/mksplash.py        (needs Pillow and numpy)
@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
-from songrande import space        # noqa: E402
+from sondugrande import space        # noqa: E402
 
 K = 4            # draw big, scale down
 SIZE = 400
@@ -76,7 +76,7 @@ def main():
     d.ellipse([10 * K, 10 * K, W - 10 * K, W - 10 * K], outline=RED, width=3 * K)
     d.ellipse([0, 0, W - 1, W - 1], outline=(0, 0, 0, 255), width=3 * K)
     out = img.resize((SIZE, SIZE), Image.LANCZOS)
-    out.save(os.path.join(HERE, "..", "songrande", "SongrandeSplash.png"))
+    out.save(os.path.join(HERE, "..", "sondugrande", "SondugrandeSplash.png"))
 
 
 if __name__ == "__main__":

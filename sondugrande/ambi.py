@@ -1,5 +1,5 @@
 """
-Songrande - Ambisonics math (numpy only, no audio, no GUI).
+Sondugrande - Ambisonics math (numpy only, no audio, no GUI).
 
 Conventions, the same as the IEM Plug-in Suite, SPARTA and the author's other
 spatial plug-ins (Balloon Palace's Ambi.h, Leitner, openfield): AmbiX, that is
@@ -7,8 +7,8 @@ ACN channel order with SN3D normalisation and no Condon-Shortley phase, orders
 1 to 7 (4 to 64 channels). Coordinates: x to the front, y to the left, z up;
 azimuth turns to the left, elevation goes up.
 
-This file is part of Songrande, a derivative of SoundGrain (Olivier Belanger).
-Songrande is free software: you can redistribute it and/or modify it under the
+This file is part of Sondugrande, a derivative of SoundGrain (Olivier Belanger).
+Sondugrande is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
 version.

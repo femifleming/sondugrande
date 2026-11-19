@@ -1,4 +1,4 @@
-"""Shared pieces of the Songrande tests: test sounds and project states."""
+"""Shared pieces of the Sondugrande tests: test sounds and project states."""
 import os
 import sys
 import tempfile
@@ -9,10 +9,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from songrande import render, space, wavio            # noqa: E402
-from songrande.scene import Scene                     # noqa: E402
+from sondugrande import render, space, wavio            # noqa: E402
+from sondugrande.scene import Scene                     # noqa: E402
 
-TMP = tempfile.mkdtemp(prefix="songrande_tests_")
+TMP = tempfile.mkdtemp(prefix="sondugrande_tests_")
 
 
 def noiseSound(name="noise.wav", seconds=3.0, rate=44100, channels=1):

@@ -1,26 +1,26 @@
 Introduction
 ============
 
-Welcome to the Songrande 1.0.0 documentation.
+Welcome to the Sondugrande 1.0.0 documentation.
 ----------------------------------------------
 
-Songrande is SoundGrain in a room. In SoundGrain you draw trajectories over a
+Sondugrande is SoundGrain in a room. In SoundGrain you draw trajectories over a
 sound and every trajectory plays a stream of grains from the places it passes
-over. In Songrande the sound lies on the floor of a room, the pen can leave the
+over. In Sondugrande the sound lies on the floor of a room, the pen can leave the
 floor, and where a trajectory goes is also where its sound is heard: around
 you, above you, near and far.
 
-Songrande is a development of SoundGrain 6.1.0 by Olivier Belanger, a graphical
+Sondugrande is a development of SoundGrain 6.1.0 by Olivier Belanger, a graphical
 interface where users can draw and edit trajectories to control granular sound
 synthesis. Everything SoundGrain does is still here and works the same way.
 Like SoundGrain it is written with Python and WxPython and uses Pyo as its
 audio engine.
 
-GNU GPL v3. SoundGrain (c) Olivier Belanger 2009-2018, Songrande (c) femifleming 2026.
+GNU GPL v3. SoundGrain (c) Olivier Belanger 2009-2018, Sondugrande (c) femifleming 2026.
 
 ### On the web: ###
 
-Songrande source code: __https://github.com/femifleming/songrande__
+Sondugrande source code: __https://github.com/femifleming/sondugrande__
 
 SoundGrain source code: __https://github.com/belangeo/soundgrain__
 
@@ -30,7 +30,7 @@ Pyo source code: __https://github.com/belangeo/pyo__
 Getting Started
 ---------------
 
-Getting sound with Songrande is as easy as:
+Getting sound with Sondugrande is as easy as:
 
 - Loading a soundfile (Menu -> File -> Open Soundfile...). Its waveform appears
   on the floor of the room.
@@ -60,4 +60,4 @@ You can record the generated sound to disk with the "Rec Start" button at the
 bottom of the control panel. Choose the recording format, destination and
 filename in File -> Open Settings (Ctrl+;).
 
-A SoundGrain project (.sg) opens in Songrande: its surface becomes the floor.
+A SoundGrain project (.sg) opens in Sondugrande: its surface becomes the floor.

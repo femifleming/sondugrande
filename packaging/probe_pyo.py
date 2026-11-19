@@ -1,7 +1,7 @@
 """Says whether pyo's own Harmonizer object works on this system.
 
 SoundGrain's Harmonizer FX ball uses it. In the Linux x86-64 build of pyo 1.1.0
-it was seen to give out nothing but NaN (under emulation); Songrande builds its
+it was seen to give out nothing but NaN (under emulation); Sondugrande builds its
 harmonizer from delay lines instead. This probe only reports: it never fails.
 """
 import os
@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 from pyo import Server, Sine, Harmonizer, getVersion
 
-from songrande import wavio
+from sondugrande import wavio
 
 path = os.path.join(tempfile.mkdtemp(prefix="pyo_probe_"), "harmonizer.wav")
 server = Server(sr=44100, nchnls=1, buffersize=512, duplex=0, audio="offline").boot()

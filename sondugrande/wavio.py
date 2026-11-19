@@ -1,8 +1,8 @@
 """
-Songrande - reading WAV files of any channel count into numpy (for the tests
+Sondugrande - reading WAV files of any channel count into numpy (for the tests
 and the self-test's analysis; the application itself reads sound through pyo).
 
-This file is part of Songrande, a derivative of SoundGrain (Olivier Belanger),
+This file is part of Sondugrande, a derivative of SoundGrain (Olivier Belanger),
 released under the GNU General Public License version 3 or later.
 """
 import struct

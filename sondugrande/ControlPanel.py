@@ -1,9 +1,9 @@
 """
 Copyright 2009-2017 Olivier Belanger (SoundGrain)
 
-This file is part of Songrande, a derivative of SoundGrain.
+This file is part of Sondugrande, a derivative of SoundGrain.
 
-Songrande is free software: you can redistribute it and/or modify
+Sondugrande is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -258,7 +258,7 @@ class ControlPanel(scrolled.ScrolledPanel):
         self.pop_precision.Bind(wx.EVT_CHOICE, self.handleSamplePrecision)
         audioGrid.Add(self.pop_precision, 0, wx.ALIGN_CENTER_VERTICAL)
         audioBox.Add(audioGrid, 0, wx.EXPAND | wx.ALL, 10)
-        audioBox.Add(wx.StaticText(audioGroup, label="Sample precision changes require restarting Songrande."),
+        audioBox.Add(wx.StaticText(audioGroup, label="Sample precision changes require restarting Sondugrande."),
                      0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         box.Add(audioBox, 0, wx.EXPAND | wx.ALL, 12)
 
@@ -1124,7 +1124,7 @@ class ControlPanel(scrolled.ScrolledPanel):
             self.parent.sg_audio.recStop()
 
     def chooseRecFolder(self, evt):
-        dlg = wx.DirDialog(self, message="Choose a folder to save Songrande's output sounds...",
+        dlg = wx.DirDialog(self, message="Choose a folder to save Sondugrande's output sounds...",
                             defaultPath=os.path.expanduser("~"))
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()

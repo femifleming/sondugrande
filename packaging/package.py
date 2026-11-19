@@ -1,7 +1,7 @@
 """Put the built applications into one archive per system, with the manual,
 the licence and a note on installing.
 
-    python packaging/package.py            ->  dist/songrande-<system>.zip (or .tar.gz on Linux)
+    python packaging/package.py            ->  dist/sondugrande-<system>.zip (or .tar.gz on Linux)
 """
 import os
 import shutil
@@ -14,37 +14,37 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, "dist")
 
 NOTES = {
-    "darwin": """Songrande and SoundGrain for macOS (Apple silicon)
+    "darwin": """Sondugrande and SoundGrain for macOS (Apple silicon)
 
-Drag Songrande.app and SoundGrain.app to /Applications (or anywhere).
+Drag Sondugrande.app and SoundGrain.app to /Applications (or anywhere).
 The applications are not notarised: the first time, right-click one and
 choose Open, or run once in Terminal
 
-    xattr -dr com.apple.quarantine /Applications/Songrande.app /Applications/SoundGrain.app
+    xattr -dr com.apple.quarantine /Applications/Sondugrande.app /Applications/SoundGrain.app
 
 macOS asks once for the microphone (the Mic button records into the sound table).
 """,
-    "win32": """Songrande and SoundGrain for Windows (64-bit)
+    "win32": """Sondugrande and SoundGrain for Windows (64-bit)
 
-Unzip the Songrande folder anywhere and start Songrande.exe or SoundGrain.exe
+Unzip the Sondugrande folder anywhere and start Sondugrande.exe or SoundGrain.exe
 (the two share the files in _internal, so keep the folder together).
 Windows SmartScreen may ask before the first start: choose More info, Run anyway.
 """,
-    "linux": """Songrande and SoundGrain for Linux (x86-64, built on Ubuntu 22.04)
+    "linux": """Sondugrande and SoundGrain for Linux (x86-64, built on Ubuntu 22.04)
 
-Unpack the Songrande folder anywhere and run ./Songrande or ./SoundGrain
+Unpack the Sondugrande folder anywhere and run ./Sondugrande or ./SoundGrain
 (the two share the files in _internal, so keep the folder together).
 They need GTK 3 and ALSA (or JACK), which a desktop system has.
 """,
 }
 
 COMMON = """
-Songrande is a development of SoundGrain by Olivier Belanger
+Sondugrande is a development of SoundGrain by Olivier Belanger
 (https://github.com/belangeo/soundgrain). Both are free software under the
 GNU General Public License version 3 (COPYING.txt). The source of both is at
-https://github.com/femifleming/songrande
+https://github.com/femifleming/sondugrande
 
-The manual is Songrande Manual.pdf. SoundGrain's own documentation is in its
+The manual is Sondugrande Manual.pdf. SoundGrain's own documentation is in its
 Help menu.
 """
 
@@ -52,20 +52,20 @@ Help menu.
 def main():
     system = "darwin" if sys.platform == "darwin" else "win32" if sys.platform == "win32" else "linux"
     label = {"darwin": "macOS-arm64", "win32": "Windows-x64", "linux": "Linux-x86_64"}[system]
-    stage = os.path.join(DIST, "songrande-" + label)
+    stage = os.path.join(DIST, "sondugrande-" + label)
     if os.path.isdir(stage):
         shutil.rmtree(stage)
     os.makedirs(stage)
     if system == "darwin":
-        for app in ("Songrande.app", "SoundGrain.app"):
+        for app in ("Sondugrande.app", "SoundGrain.app"):
             # ditto keeps the bundle's symbolic links and signature
             subprocess.check_call(["ditto", os.path.join(DIST, app), os.path.join(stage, app)])
     else:
-        shutil.copytree(os.path.join(DIST, "Songrande"), os.path.join(stage, "Songrande"), symlinks=True)
+        shutil.copytree(os.path.join(DIST, "Sondugrande"), os.path.join(stage, "Sondugrande"), symlinks=True)
     with open(os.path.join(stage, "README.txt"), "w", encoding="utf-8") as f:
         f.write(NOTES[system] + COMMON)
     shutil.copy(os.path.join(ROOT, "scripts", "COPYING.txt"), os.path.join(stage, "COPYING.txt"))
-    manual = os.path.join(ROOT, "docs", "manual", "Songrande Manual.pdf")
+    manual = os.path.join(ROOT, "docs", "manual", "Sondugrande Manual.pdf")
     if os.path.isfile(manual):
         shutil.copy(manual, stage)
     examples = os.path.join(ROOT, "examples")

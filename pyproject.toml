@@ -2,38 +2,38 @@
 requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
-# One distribution with both applications: Songrande, and the SoundGrain it
+# One distribution with both applications: Sondugrande, and the SoundGrain it
 # was developed from (Olivier Belanger's, unchanged, as the soundgrain_resources
 # package exactly as SoundGrain's own pyproject installs it).
 [project]
-name = "songrande"
+name = "sondugrande"
 dynamic = ["version"]
 description = "SoundGrain in a room: draw where granular sound moves in space (Ambisonics, binaural, loudspeakers)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
-authors = [{name = "Olivier Belanger (SoundGrain)"}, {name = "femifleming (Songrande)"}]
+authors = [{name = "Olivier Belanger (SoundGrain)"}, {name = "femifleming (Sondugrande)"}]
 dependencies = ["pyo>=1.1.0", "wxPython", "markdown", "numpy"]
 
 [project.scripts]
-songrande = "Songrande:main"
+sondugrande = "Sondugrande:main"
 soundgrain = "SoundGrain:main"
 soundgrain-register-desktop = "soundgrain_resources.desktop:main"
 
 [project.urls]
-Homepage = "https://github.com/femifleming/songrande"
+Homepage = "https://github.com/femifleming/sondugrande"
 SoundGrain = "https://github.com/belangeo/soundgrain"
 
 [tool.setuptools]
-packages = ["soundgrain_resources", "songrande"]
-package-dir = {soundgrain_resources = "Resources", songrande = "songrande"}
-py-modules = ["SoundGrain", "Songrande"]
+packages = ["soundgrain_resources", "sondugrande"]
+package-dir = {soundgrain_resources = "Resources", sondugrande = "sondugrande"}
+py-modules = ["SoundGrain", "Sondugrande"]
 include-package-data = false
 
 [tool.setuptools.dynamic]
-version = {attr = "songrande.constants.SG_VERSION"}
+version = {attr = "sondugrande.constants.SG_VERSION"}
 
 [tool.setuptools.package-data]
 soundgrain_resources = ["*.png", "*.ico", "*.icns", "*.sg", "images/*.png", "doc/*.md"]
-songrande = ["*.png", "*.ico", "*.sgr", "images/*.png", "doc/*.md"]
+sondugrande = ["*.png", "*.ico", "*.sgr", "images/*.png", "doc/*.md"]

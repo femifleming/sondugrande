@@ -1,18 +1,18 @@
 """
-Songrande - the self-test: start the real application, draw in the room with
+Sondugrande - the self-test: start the real application, draw in the room with
 the mouse handlers, play, record what comes out, check that the sound moves,
 save the project, load it back, and quit.
 
-    Songrande --selftest folder [--seconds 6] [--output Ambisonics] [--order 3]
+    Sondugrande --selftest folder [--seconds 6] [--output Ambisonics] [--order 3]
                                 [--layout Octagon] [--device "BlackHole 16ch"]
                                 [--offline] [--keep]
 
-With --offline (or SONGRANDE_AUDIO=offline) no audio device is needed: the
+With --offline (or SONDUGRANDE_AUDIO=offline) no audio device is needed: the
 engine renders into the file instead of playing (this is what the build
 machines run). The folder receives the recording, pictures of the room, the
 saved project and report.json; the exit status is 0 if every check passed.
 
-This file is part of Songrande, a derivative of SoundGrain (Olivier Belanger),
+This file is part of Sondugrande, a derivative of SoundGrain (Olivier Belanger),
 released under the GNU General Public License version 3 or later.
 """
 import json
@@ -25,7 +25,7 @@ import traceback
 
 def parse(argv):
     import argparse
-    parser = argparse.ArgumentParser(prog="Songrande --selftest")
+    parser = argparse.ArgumentParser(prog="Sondugrande --selftest")
     parser.add_argument("folder")
     parser.add_argument("--seconds", type=float, default=6.0)
     parser.add_argument("--output", default="Ambisonics",
@@ -70,7 +70,7 @@ class SelfTest:
         self.options = options
         self.folder = os.path.abspath(options.folder)
         self.report = {"checks": {}, "errors": [], "options": vars(options)}
-        self.app = application.SongrandeApp(redirect=False)
+        self.app = application.SondugrandeApp(redirect=False)
         self.frame = self.app.frame
         self.frame.Show()
         self.panel = self.frame.panel
@@ -414,9 +414,9 @@ def main(argv):
     with open(prefs, "w") as f:
         f.write("audioDriver=%s\nmidiDriver=\nsamplePrecision=32-bit\nlastFilePath=%s\nlastAudioPath=%s\n"
                 % (options.device or "", options.folder, options.folder))
-    os.environ["SONGRANDE_PREFS"] = prefs
+    os.environ["SONDUGRANDE_PREFS"] = prefs
     if options.offline:
-        os.environ["SONGRANDE_AUDIO"] = "offline"
+        os.environ["SONDUGRANDE_AUDIO"] = "offline"
     test = SelfTest(options)
     test.app.MainLoop()
     return test.code

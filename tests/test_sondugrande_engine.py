@@ -1,4 +1,4 @@
-"""Songrande: the sound engine, rendered offline (no display, no audio device).
+"""Sondugrande: the sound engine, rendered offline (no display, no audio device).
 
 Every test builds a small project, renders it through the real engine into a
 file and looks at the samples.
@@ -13,10 +13,10 @@ import unittest
 
 import numpy as np
 
-from songrande_helpers import (ROOT, TMP, noiseSound, sineSound, roomPoints, stateWith, still,
+from sondugrande_helpers import (ROOT, TMP, noiseSound, sineSound, roomPoints, stateWith, still,
                                renderState)
-from songrande import ambi, render, space, wavio
-from songrande.scene import Scene
+from sondugrande import ambi, render, space, wavio
+from sondugrande.scene import Scene
 
 
 def direction(az, el):
@@ -432,8 +432,8 @@ class ProjectTests(unittest.TestCase):
             audio.shutdown()
 
     def test_the_new_project_file_is_the_empty_state(self):
-        from songrande.constants import NEW_FILE
-        state = render.loadProject(os.path.join(ROOT, "songrande", NEW_FILE))
+        from sondugrande.constants import NEW_FILE
+        state = render.loadProject(os.path.join(ROOT, "sondugrande", NEW_FILE))
         self.assertEqual(len(state["Trajectories"]), 16)
         self.assertEqual(state["Space"]["output"], "Binaural")
         self.assertFalse(any(t["active"] for t in state["Trajectories"].values()))
@@ -443,7 +443,7 @@ class ProjectTests(unittest.TestCase):
         project = os.path.join(TMP, "cli.sgr")
         render.saveProject(state, project)
         out = os.path.join(TMP, "cli.wav")
-        result = subprocess.run([sys.executable, os.path.join(ROOT, "Songrande.py"), "--render", project, out,
+        result = subprocess.run([sys.executable, os.path.join(ROOT, "Sondugrande.py"), "--render", project, out,
                                  "--dur", "1.5", "--output", "Ambisonics", "--order", "2"],
                                 capture_output=True, text=True, timeout=180)
         self.assertEqual(result.returncode, 0, result.stderr)

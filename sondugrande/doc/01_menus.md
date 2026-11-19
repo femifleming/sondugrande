@@ -49,7 +49,7 @@ and __Record Settings__.
 In __Audio Settings__, choose the input and output audio devices and sample
 precision. The device lists are updated at startup, and devices cannot be
 changed during playback or microphone recording. Changing sample precision
-requires restarting Songrande.
+requires restarting Sondugrande.
 
 In __Project Settings__, choose the __Sample rate__ and the __Output__: headphones
 (Binaural), two loudspeakers (Stereo), Ambisonics for a decoder, or a
@@ -61,7 +61,7 @@ In __Record Settings__, choose the audio file __Format__ and __Sample type__.
 Enter the output folder path in __Destination__, or click __Choose__ to select
 it with a folder dialog.
 
-Enter a base name in __Filename__, without an extension. Songrande automatically
+Enter a base name in __Filename__, without an extension. Sondugrande automatically
 appends the date, time and the extension for the selected format to avoid
 overwriting an existing file.
 

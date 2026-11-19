@@ -27,7 +27,7 @@ The scene itself, in the AmbiX format (ACN channel order, SN3D normalisation):
 and 64 at 7th. Send it to a decoder of the same order, such as the IEM
 AllRADecoder (loudspeakers) or BinauralDecoder (headphones), or a SPARTA
 decoder; choose SN3D there. The output device needs that many channels: with a
-virtual device of 16 or 64 channels Songrande can play straight into a track
+virtual device of 16 or 64 channels Sondugrande can play straight into a track
 of REAPER.
 
 ##### Loudspeakers #####
@@ -48,7 +48,7 @@ channels (3rd order).
 With this ticked, __Rec Start__ writes the Ambisonic scene (all its channels)
 while you listen on headphones or loudspeakers.
 
-If the output device has too few channels for the format, Songrande says so in
+If the output device has too few channels for the format, Sondugrande says so in
 the status bar and plays on headphones (Binaural) instead.
 
 ______________________________________________________________________________
@@ -101,7 +101,7 @@ Rendering offline
 A saved project can be rendered to a file without the application's window,
 faster than real time:
 
-    Songrande --render project.sgr out.wav --dur 60 --output Ambisonics --order 5
+    Sondugrande --render project.sgr out.wav --dur 60 --output Ambisonics --order 5
 
 Options: __--output__ Binaural, Stereo, Ambisonics or Speakers; __--order__ 1 to 7;
 __--layout__ name; __--bus__ (write the Ambisonic scene whatever the output);

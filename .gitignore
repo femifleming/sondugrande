@@ -61,7 +61,7 @@ target/
 .DS_Store
 
 
-# Songrande
+# Sondugrande
 /build/
 /dist/
 *.spec.bak

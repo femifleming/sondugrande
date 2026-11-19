@@ -1,4 +1,4 @@
-"""Songrande: the Ambisonic conventions and decoders (no display, no audio device).
+"""Sondugrande: the Ambisonic conventions and decoders (no display, no audio device).
 
 Run with python3 -m unittest discover -s tests
 """
@@ -9,8 +9,8 @@ import unittest
 
 import numpy as np
 
-from songrande_helpers import TMP
-from songrande import ambi
+from sondugrande_helpers import TMP
+from sondugrande import ambi
 
 
 def direction(az, el):

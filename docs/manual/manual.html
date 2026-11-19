@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Songrande Manual</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Sondugrande Manual</title>
 <style>
 @page{size:A4;margin:17mm 16mm 17mm 16mm}
 body{font:10pt/1.46 "Helvetica Neue",Helvetica,Arial,sans-serif;color:#1c1c1c;background:#fff;margin:0}
@@ -32,7 +32,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 
 <div class="cover">
 <img class="icon" src="../icon.png">
-<h1>songrande</h1>
+<h1>sondugrande</h1>
 <p class="sub" style="margin-top:5mm">SoundGrain in a room: draw where the sound moves</p>
 <img class="shot" src="window.png">
 <p>M A N U A L</p>
@@ -42,7 +42,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <section>
 <h2>Contents</h2>
 <table class="toc">
-<tr><td>1. What Songrande is</td></tr>
+<tr><td>1. What Sondugrande is</td></tr>
 <tr><td>2. Installing it</td></tr>
 <tr><td>3. A first sound</td></tr>
 <tr><td>4. The window</td></tr>
@@ -62,34 +62,34 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <tr><td>18. How it works, sources and credits</td></tr>
 </table>
 
-<h2 style="margin-top:12mm">1. What Songrande is</h2>
+<h2 style="margin-top:12mm">1. What Sondugrande is</h2>
 <p><b>SoundGrain</b>, by Olivier B&eacute;langer, is a granular synthesizer you play by drawing. You load a sound, its waveform fills the window, and you draw trajectories over it: a small ball runs along each one, and wherever it is, grains of the sound are played from that place. Left to right is the place in the sound; up and down is whatever you ask it to be (pitch, density, grain length and more).</p>
-<p><b>Songrande</b> is SoundGrain in a room. The waveform lies on the floor, you stand in the middle of it, and the pen can leave the floor. A trajectory still chooses its grains by where it is over the floor, exactly as in SoundGrain, and now the same line says <b>where the sound is heard</b>: to your left, behind you, overhead, close to your ear or far away. Draw a circle round yourself and the sound walks round you; pull the end of it up and it climbs.</p>
-<p>Every trajectory is one stream of grains and one source in space, up to sixteen at once. All of them are encoded into one <b>Ambisonic</b> scene (AmbiX: ACN channel order, SN3D normalisation, 1st to 7th order, the format the IEM and SPARTA plug-ins use), and that scene is either sent out as it is, for a decoder of your own, or decoded inside Songrande for headphones, for two loudspeakers or for a loudspeaker layout.</p>
-<p>Everything SoundGrain does is still there and works the same way: the four kinds of trajectory, the lowpass filter on the pen, the granulator controls, the Y axis, the FX balls, the envelope, MIDI, the equaliser and compressor, recording. SoundGrain itself, unchanged, comes with Songrande as a second application.</p>
+<p><b>Sondugrande</b> is SoundGrain in a room. The waveform lies on the floor, you stand in the middle of it, and the pen can leave the floor. A trajectory still chooses its grains by where it is over the floor, exactly as in SoundGrain, and now the same line says <b>where the sound is heard</b>: to your left, behind you, overhead, close to your ear or far away. Draw a circle round yourself and the sound walks round you; pull the end of it up and it climbs.</p>
+<p>Every trajectory is one stream of grains and one source in space, up to sixteen at once. All of them are encoded into one <b>Ambisonic</b> scene (AmbiX: ACN channel order, SN3D normalisation, 1st to 7th order, the format the IEM and SPARTA plug-ins use), and that scene is either sent out as it is, for a decoder of your own, or decoded inside Sondugrande for headphones, for two loudspeakers or for a loudspeaker layout.</p>
+<p>Everything SoundGrain does is still there and works the same way: the four kinds of trajectory, the lowpass filter on the pen, the granulator controls, the Y axis, the FX balls, the envelope, MIDI, the equaliser and compressor, recording. SoundGrain itself, unchanged, comes with Sondugrande as a second application.</p>
 </section>
 
 <section>
 <h2>2. Installing it</h2>
-<p>Each download holds two applications, <b>Songrande</b> and <b>SoundGrain</b>, this manual, an example project and the licence.</p>
+<p>Each download holds two applications, <b>Sondugrande</b> and <b>SoundGrain</b>, this manual, an example project and the licence.</p>
 <table>
-<tr><td>macOS (Apple silicon)</td><td>Unzip and drag <b>Songrande.app</b> and <b>SoundGrain.app</b> to <i>/Applications</i>. They are not notarised: the first time, right-click the application and choose <i>Open</i>, or run <code>xattr -dr com.apple.quarantine /Applications/Songrande.app /Applications/SoundGrain.app</code> once in Terminal. macOS asks once whether Songrande may use the microphone (the <b>Mic</b> button records into the sound table).</td></tr>
-<tr><td>Windows (64-bit)</td><td>Unzip the <b>Songrande</b> folder anywhere and start <b>Songrande.exe</b> or <b>SoundGrain.exe</b>. The two share the files in <i>_internal</i>: keep the folder together. SmartScreen may ask before the first start: <i>More info</i>, <i>Run anyway</i>.</td></tr>
-<tr><td>Linux (x86-64)</td><td>Unpack the <b>Songrande</b> folder anywhere and run <code>./Songrande</code> or <code>./SoundGrain</code>. Built on Ubuntu 22.04; it needs GTK 3 and ALSA or JACK, which a desktop system has.</td></tr>
-<tr><td>From the source</td><td>With Python 3.11 or later: <code>pip install pyo wxPython numpy markdown</code>, then <code>python Songrande.py</code> or <code>python SoundGrain.py</code> in the source folder. (On Linux, wxPython comes from your distribution or from <i>extras.wxpython.org</i>.)</td></tr>
+<tr><td>macOS (Apple silicon)</td><td>Unzip and drag <b>Sondugrande.app</b> and <b>SoundGrain.app</b> to <i>/Applications</i>. They are not notarised: the first time, right-click the application and choose <i>Open</i>, or run <code>xattr -dr com.apple.quarantine /Applications/Sondugrande.app /Applications/SoundGrain.app</code> once in Terminal. macOS asks once whether Sondugrande may use the microphone (the <b>Mic</b> button records into the sound table).</td></tr>
+<tr><td>Windows (64-bit)</td><td>Unzip the <b>Sondugrande</b> folder anywhere and start <b>Sondugrande.exe</b> or <b>SoundGrain.exe</b>. The two share the files in <i>_internal</i>: keep the folder together. SmartScreen may ask before the first start: <i>More info</i>, <i>Run anyway</i>.</td></tr>
+<tr><td>Linux (x86-64)</td><td>Unpack the <b>Sondugrande</b> folder anywhere and run <code>./Sondugrande</code> or <code>./SoundGrain</code>. Built on Ubuntu 22.04; it needs GTK 3 and ALSA or JACK, which a desktop system has.</td></tr>
+<tr><td>From the source</td><td>With Python 3.11 or later: <code>pip install pyo wxPython numpy markdown</code>, then <code>python Sondugrande.py</code> or <code>python SoundGrain.py</code> in the source folder. (On Linux, wxPython comes from your distribution or from <i>extras.wxpython.org</i>.)</td></tr>
 </table>
-<p>The first time Songrande starts it takes the audio and MIDI devices SoundGrain was set to, if SoundGrain has been used on the computer. After that it keeps its own settings.</p>
+<p>The first time Sondugrande starts it takes the audio and MIDI devices SoundGrain was set to, if SoundGrain has been used on the computer. After that it keeps its own settings.</p>
 
 <h2 style="margin-top:9mm">3. A first sound</h2>
 <ol>
 <li><b>File &rarr; Open Soundfile...</b> (or drop a sound on the room). Its waveform appears on the floor. Or <b>File &rarr; Open...</b> the example, <i>examples/demo.sgr</i>.</li>
-<li>Put on <b>headphones</b>. Songrande starts with the <i>Binaural</i> output, which is made for them.</li>
+<li>Put on <b>headphones</b>. Sondugrande starts with the <i>Binaural</i> output, which is made for them.</li>
 <li>Draw a line on the floor with the mouse.</li>
 <li>Press <b>Start</b>. A ball runs along the line: the sound is where the ball is.</li>
 <li>Click the <b>Top</b> button at the top left of the room, choose <b>Circle</b> under <i>Trajectories</i>, press in the middle of the room, on yourself, and drag outwards. The sound goes round your head.</li>
 <li>Back in the <b>3D</b> view, choose <b>Free</b> and draw another line; half way along it hold <b>Cmd</b> (macOS) or <b>Ctrl</b> (Windows, Linux) and move the mouse up. The pen leaves the floor, and the sound rises with it.</li>
 </ol>
-<div class="box">Songrande plays on headphones until you tell it otherwise. For loudspeakers or for an Ambisonic decoder, see chapter 12.</div>
+<div class="box">Sondugrande plays on headphones until you tell it otherwise. For loudspeakers or for an Ambisonic decoder, see chapter 12.</div>
 </section>
 
 <section>
@@ -103,7 +103,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <tr><td>a ball on a trajectory</td><td>where that stream of grains is now, with its foot on the floor.</td></tr>
 <tr><td>the control panel</td><td>on the right, SoundGrain's: the kind of trajectory, the <b>Draw</b>, <b>Var</b> and <b>Play</b> tabs and a new <b>3D</b> tab, the equaliser, the compressor, the level and its meter, <b>Mic</b>, <b>Start</b> and <b>Rec Start</b>.</td></tr>
 <tr><td>the numbers at the bottom right</td><td>where the pen is: X (seconds into the sound), Y, Z (height), then azimuth, elevation and distance from you.</td></tr>
-<tr><td>the status bar</td><td>the sound that is loaded, and anything Songrande has to tell you.</td></tr>
+<tr><td>the status bar</td><td>the sound that is loaded, and anything Sondugrande has to tell you.</td></tr>
 </table>
 <p>The distances are in <b>radii of the loudspeaker sphere</b>. The floor is two radii wide. A sound on the sphere is at its normal level; inside it, nearer and louder; outside it (towards the corners of the room), further and softer.</p>
 
@@ -200,7 +200,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 </table>
 <img class="half" src="room_azimuth.png">
 <p class="cap" style="text-align:center">X follows the azimuth: the waveform is drawn round the listener.</p>
-<p>A grain needs sound after the place it starts at. SoundGrain falls silent when a trajectory reaches the right edge; in the room that edge is a wall, so Songrande holds the place in the sound at the last one a whole grain still fits after.</p>
+<p>A grain needs sound after the place it starts at. SoundGrain falls silent when a trajectory reaches the right edge; in the room that edge is a wall, so Sondugrande holds the place in the sound at the last one a whole grain still fits after.</p>
 
 <h2 style="margin-top:8mm">10. FX balls</h2>
 <p>The <b>FxBall</b> menu adds SoundGrain's ten effects (reverb, delay, distortion, waveguide, complex resonator, degrade, harmonizer, clipper, flanger, detuned resonator; the harmonizer is rebuilt from two swept delay lines, as pyo's own gave no sound on some systems). In the room a ball is a <b>sphere</b>: a stream sounds through the effect while its ball is inside it, more the nearer it is to the middle, and <b>the effect's sound comes out from where the FX ball is</b>. A delay ball at the back of the room answers from the back.</p>
@@ -251,7 +251,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <tr><td>Record the Ambisonic bus</td><td><b>Rec Start</b> then writes the scene while you listen on headphones or loudspeakers.</td></tr>
 </table>
 </div></div>
-<p>The output can be changed while audio is stopped; it restarts the audio engine. If the output device has too few channels for what you choose, the status bar says so and Songrande plays Binaural instead.</p>
+<p>The output can be changed while audio is stopped; it restarts the audio engine. If the output device has too few channels for what you choose, the status bar says so and Sondugrande plays Binaural instead.</p>
 <h3>Ambisonics, to a decoder</h3>
 <table>
 <tr><th>Order</th><th>Channels</th></tr>
@@ -274,7 +274,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <h2>13. Recording and rendering</h2>
 <p><b>Rec Start</b> records what goes to the output device, with all its channels, into the folder and under the name set in <b>Settings</b> (the date and time are added). With <i>Record the Ambisonic bus</i> ticked the file is the Ambisonic scene, named <i>..._ambix3_...</i> for 3rd order.</p>
 <p>A saved project can also be rendered without the window, faster than real time. In a terminal:</p>
-<pre>Songrande --render project.sgr out.wav --dur 60 --output Ambisonics --order 5</pre>
+<pre>Sondugrande --render project.sgr out.wav --dur 60 --output Ambisonics --order 5</pre>
 <table>
 <tr><td>--dur</td><td>seconds to render</td></tr>
 <tr><td>--output</td><td>Binaural, Stereo, Ambisonics or Speakers (the project's own if left out)</td></tr>
@@ -282,13 +282,13 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <tr><td>--bus</td><td>write the Ambisonic scene whatever the output is</td></tr>
 <tr><td>--sound, --sr</td><td>another sound file; another sampling rate</td></tr>
 </table>
-<p>On macOS the program is <i>Songrande.app/Contents/MacOS/Songrande</i>.</p>
+<p>On macOS the program is <i>Sondugrande.app/Contents/MacOS/Sondugrande</i>.</p>
 
 <h2 style="margin-top:8mm">14. MIDI</h2>
 <p>As in SoundGrain. <b>Midi &rarr; Memorize Trajectory</b> keeps the selected trajectory, with its height and all; after that every note played makes a copy of it, transposed by the note, placed front to back by how hard it was played (and left to right by its pitch, if <i>Midi Settings</i> says so), and takes it away again when the note ends. Right-click a slider of the Granulator Controls or of the Space Controls and move a controller to tie the two together.</p>
 
 <h2 style="margin-top:8mm">15. Projects, and SoundGrain itself</h2>
-<p>Songrande saves <b>.sgr</b> files: everything in the room, the granulator, the space and the view. It also opens SoundGrain's <b>.sg</b> files: the surface becomes the floor, with every trajectory and FX ball in its place at ear level, and it sounds as it did, now round you. Saving then asks for a new .sgr file; the .sg file is left alone.</p>
+<p>Sondugrande saves <b>.sgr</b> files: everything in the room, the granulator, the space and the view. It also opens SoundGrain's <b>.sg</b> files: the surface becomes the floor, with every trajectory and FX ball in its place at ear level, and it sounds as it did, now round you. Saving then asks for a new .sgr file; the .sg file is left alone.</p>
 <p>The output format belongs to the project and to the computer: a project saved with a 64-channel output still opens on a laptop, on headphones.</p>
 <p><b>SoundGrain</b> is the second application in the download: Olivier B&eacute;langer's SoundGrain 6.1.0 as he wrote it, with its own documentation under its Help menu. The two keep separate settings and do not get in each other's way.</p>
 </section>
@@ -299,7 +299,7 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 <tr><td>No sound</td><td>Is a sound loaded (the status bar says)? Is there a trajectory, and does its ball move after <b>Start</b>? Is the right output device chosen in <b>Settings</b>? Is the <b>Global amplitude</b> up?</td></tr>
 <tr><td>The sound is in my head, or does not move much</td><td>Binaural is for headphones; on loudspeakers choose <i>Stereo</i> or <i>Loudspeakers</i>. A sound drawn close to the head spreads round it on purpose: draw further out.</td></tr>
 <tr><td>It says the device has too few channels</td><td>Ambisonics and loudspeaker layouts need one device channel each. Pick a device with enough in <b>Settings</b>, or a lower order.</td></tr>
-<tr><td>Left and right are swapped in my decoder</td><td>Set the decoder to SN3D and ACN (AmbiX). In Songrande the front is the top of the Top view.</td></tr>
+<tr><td>Left and right are swapped in my decoder</td><td>Set the decoder to SN3D and ACN (AmbiX). In Sondugrande the front is the top of the Top view.</td></tr>
 <tr><td>A trajectory will not start where I press</td><td>A press on a line pulls that line. Press where nothing is, or draw from another side of the room.</td></tr>
 <tr><td>The pen will not go where I want on the sphere</td><td>It draws on the side that faces you. Walk round (right-drag) or use the Top view for the top half.</td></tr>
 <tr><td>The pitch bends when things move</td><td>That is the Doppler effect. Turn <b>Doppler</b> down in the Space Controls, or make the <b>Room Size</b> smaller.</td></tr>
@@ -340,15 +340,15 @@ pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;b
 
 <section>
 <h2>18. How it works, sources and credits</h2>
-<p>Songrande is SoundGrain's own program with its drawing surface replaced by a room and its stereo output replaced by an Ambisonic scene. Each of the sixteen granulators (pyo's <i>Particle2</i>) gives out four signals instead of two, the corners of a small cloud round its trajectory's point, and pans every grain among them as the grain is born. Each of those goes through a delay as long as the sound's way to you (which is what bends the pitch of a moving sound) and a filter for the air, and is then weighted onto the channels of the scene by the spherical harmonics of its direction and by its distance. The weights glide from one step of the ball to the next, so nothing clicks. The FX balls and the room's reverb are sources in the same scene. SoundGrain's equaliser runs on every channel alike, and its compressor listens to the omnidirectional channel and turns all channels down together, so neither can bend the picture.</p>
+<p>Sondugrande is SoundGrain's own program with its drawing surface replaced by a room and its stereo output replaced by an Ambisonic scene. Each of the sixteen granulators (pyo's <i>Particle2</i>) gives out four signals instead of two, the corners of a small cloud round its trajectory's point, and pans every grain among them as the grain is born. Each of those goes through a delay as long as the sound's way to you (which is what bends the pitch of a moving sound) and a filter for the air, and is then weighted onto the channels of the scene by the spherical harmonics of its direction and by its distance. The weights glide from one step of the ball to the next, so nothing clicks. The FX balls and the room's reverb are sources in the same scene. SoundGrain's equaliser runs on every channel alike, and its compressor listens to the omnidirectional channel and turns all channels down together, so neither can bend the picture.</p>
 <p>The scene is decoded for headphones with head-related filters fitted to the spherical harmonics by the magnitude-least-squares method (Sch&ouml;rkhuber, Zaunschirm and H&ouml;ldrich, 2018), from the MIT KEMAR measurements of Gardner and Martin (1994) that come with pyo; for loudspeakers with the all-round Ambisonic decoder of Zotter and Frank (2012), max-rE weighted.</p>
 <table>
-<tr><td>SoundGrain</td><td>Olivier B&eacute;langer, 2009-2018 and since. Songrande is a derivative work of SoundGrain 6.1.0 and, like it, free software under the GNU General Public License version 3. <i>github.com/belangeo/soundgrain</i></td></tr>
+<tr><td>SoundGrain</td><td>Olivier B&eacute;langer, 2009-2018 and since. Sondugrande is a derivative work of SoundGrain 6.1.0 and, like it, free software under the GNU General Public License version 3. <i>github.com/belangeo/soundgrain</i></td></tr>
 <tr><td>pyo</td><td>Olivier B&eacute;langer's audio engine for Python (LGPL), which makes every sound here. <i>github.com/belangeo/pyo</i></td></tr>
 <tr><td>wxPython, NumPy</td><td>the windows and the mathematics.</td></tr>
-<tr><td>Ambisonic conventions</td><td>those of the IEM Plug-in Suite and SPARTA (AmbiX), so that Songrande's scene goes straight into their decoders. The distance model follows the IEM RoomEncoder's ideas; no code of theirs is included.</td></tr>
+<tr><td>Ambisonic conventions</td><td>those of the IEM Plug-in Suite and SPARTA (AmbiX), so that Sondugrande's scene goes straight into their decoders. The distance model follows the IEM RoomEncoder's ideas; no code of theirs is included.</td></tr>
 <tr><td>its relatives</td><td>the author's other spatial instruments, from which the distance and Doppler model, the grain scatter, the flock, the turning scene and the mirrored lines come: Pinkie Pie's Balloon Palace, Leitner (after Bernhard Leitner and Iannis Xenakis), openfield, Chloaeilius and ObliqSonic.</td></tr>
-<tr><td>Songrande</td><td>femifleming, 2026, written with Claude Code. <i>github.com/femifleming/songrande</i></td></tr>
+<tr><td>Sondugrande</td><td>femifleming, 2026, written with Claude Code. <i>github.com/femifleming/sondugrande</i></td></tr>
 </table>
 </section>
 </body></html>

@@ -1,9 +1,9 @@
 """
 Copyright 2009-2017 Olivier Belanger (SoundGrain)
 
-This file is part of Songrande, a derivative of SoundGrain.
+This file is part of Sondugrande, a derivative of SoundGrain.
 
-Songrande is free software: you can redistribute it and/or modify
+Sondugrande is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -31,13 +31,13 @@ else:
 DEFAULT_ENCODING = sys.getdefaultencoding()
 SYSTEM_ENCODING = sys.getfilesystemencoding()
 
-NAME = 'Songrande'
+NAME = 'Sondugrande'
 SG_VERSION = '1.0.0'
 SG_YEAR = '2026'
 # the SoundGrain this was developed from
 SOUNDGRAIN_VERSION = '6.1.0'
 PROJECT_EXT = 'sgr'
-NEW_FILE = 'new_songrande_file.sgr'
+NEW_FILE = 'new_sondugrande_file.sgr'
 PLATFORM = sys.platform
 MAX_STREAMS = 16
 
@@ -46,18 +46,21 @@ RESOURCES_PATH = os.path.dirname(os.path.abspath(__file__))
 
 DOCUMENTATION_PATH = os.path.join(RESOURCES_PATH, "doc")
 IMAGES_PATH = os.path.join(RESOURCES_PATH, 'images')
-SPLASH_FILE = os.path.join(RESOURCES_PATH, "SongrandeSplash.png")
+SPLASH_FILE = os.path.join(RESOURCES_PATH, "SondugrandeSplash.png")
 
-# SONGRANDE_PREFS names another preferences file (the self-test uses one of its own)
-PREFFILE = os.environ.get("SONGRANDE_PREFS") or os.path.join(os.path.expanduser("~"), ".songrande-init")
-# the first time Songrande runs it starts from SoundGrain's audio and MIDI devices
+# SONDUGRANDE_PREFS names another preferences file (the self-test uses one of its own)
+PREFFILE = os.environ.get("SONDUGRANDE_PREFS") or os.path.join(os.path.expanduser("~"), ".sondugrande-init")
+# the first time Sondugrande runs it starts from SoundGrain's audio and MIDI devices
 READ_PREFFILE = PREFFILE
-if not os.path.isfile(PREFFILE) and not os.environ.get("SONGRANDE_PREFS"):
-    _soundgrain = os.path.join(os.path.expanduser("~"), ".soundgrain-init")
-    if os.path.isfile(_soundgrain):
-        READ_PREFFILE = _soundgrain
-# SONGRANDE_AUDIO=offline runs without an audio device (the self-test on a build machine)
-AUDIO_BACKEND = os.environ.get("SONGRANDE_AUDIO", "portaudio")
+if not os.path.isfile(PREFFILE) and not os.environ.get("SONDUGRANDE_PREFS"):
+    # (before Sondugrande was renamed it was Songrande, with ~/.songrande-init)
+    for _older in (".songrande-init", ".soundgrain-init"):
+        _older = os.path.join(os.path.expanduser("~"), _older)
+        if os.path.isfile(_older):
+            READ_PREFFILE = _older
+            break
+# SONDUGRANDE_AUDIO=offline runs without an audio device (the self-test on a build machine)
+AUDIO_BACKEND = os.environ.get("SONDUGRANDE_AUDIO", "portaudio")
 if os.path.isfile(READ_PREFFILE):
     with open(READ_PREFFILE, "r", encoding=FILE_ENCODING) as f:
         lines = f.readlines()

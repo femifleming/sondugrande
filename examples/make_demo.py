@@ -14,8 +14,8 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from songrande import render, space, wavio          # noqa: E402
-from songrande.scene import Scene                   # noqa: E402
+from sondugrande import render, space, wavio          # noqa: E402
+from sondugrande.scene import Scene                   # noqa: E402
 
 
 def makeSound(path, seconds=8.0, rate=44100):

@@ -1,5 +1,5 @@
 """
-Songrande - the scene: sixteen trajectories and the FX balls, in a room.
+Sondugrande - the scene: sixteen trajectories and the FX balls, in a room.
 
 Everything SoundGrain's drawing surface knew that is not a pixel lives here:
 making trajectories (free-hand, circle, oscillation, line, spiral), editing,
@@ -9,8 +9,8 @@ is. There is no GUI in this file: the 3D surface turns the pointer into points
 of the room and calls these methods, and so do the tests, the self-test and
 the offline renderer.
 
-Copyright 2009-2017 Olivier Belanger (SoundGrain), Songrande additions 2026.
-This file is part of Songrande, a derivative of SoundGrain, released under the
+Copyright 2009-2017 Olivier Belanger (SoundGrain), Sondugrande additions 2026.
+This file is part of Sondugrande, a derivative of SoundGrain, released under the
 GNU General Public License version 3 or later.
 """
 import math

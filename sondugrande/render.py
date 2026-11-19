@@ -1,14 +1,14 @@
 """
-Songrande - running a project without a window: offline rendering.
+Sondugrande - running a project without a window: offline rendering.
 
-    python Songrande.py --render project.sgr out.wav --dur 20 --output Ambisonics --order 3
+    python Sondugrande.py --render project.sgr out.wav --dur 20 --output Ambisonics --order 3
 
 renders a saved project (or a scene built in code) to a sound file faster
 than real time, through exactly the same engine as the application. The tests
 and the continuous-integration smoke test use it, and it is the way to bounce
 a long Ambisonic file.
 
-This file is part of Songrande, a derivative of SoundGrain (Olivier Belanger),
+This file is part of Sondugrande, a derivative of SoundGrain (Olivier Belanger),
 released under the GNU General Public License version 3 or later.
 """
 import os
@@ -149,7 +149,7 @@ def render(state, out, dur=10.0, sound=None, overrides=None, sr=None, sampletype
 
 
 def emptyState():
-    """The state of a new project (what new_songrande_file.sgr holds)."""
+    """The state of a new project (what new_sondugrande_file.sgr holds)."""
     from .audio import SPACE_DEFAULTS
     from .Trajectory import Trajectory
     blank = Trajectory(None, 1).getAttributes()
@@ -180,8 +180,8 @@ def main(argv):
     """Command line: --render project out.wav [--dur s] [--output mode] [--order n]
     [--layout name] [--sound file] [--sr rate] [--bus]"""
     import argparse
-    parser = argparse.ArgumentParser(prog="Songrande --render",
-                                     description="Render a Songrande (or SoundGrain) project offline.")
+    parser = argparse.ArgumentParser(prog="Sondugrande --render",
+                                     description="Render a Sondugrande (or SoundGrain) project offline.")
     parser.add_argument("project")
     parser.add_argument("out")
     parser.add_argument("--dur", type=float, default=10.0)

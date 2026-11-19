@@ -1,8 +1,10 @@
 """Takes the pictures of the manual from the real application (macOS).
 
-    python docs/manual/make_shots.py ["output device with 16 channels or more"]
+    python docs/manual/make_shots.py ["output device"]
 
-Starts Songrande with the example project, plays it, and photographs its own
+Without a device it runs on pyo's offline server (no audio device is opened).
+
+Starts Sondugrande with the example project, plays it, and photographs its own
 windows (by window number, so nothing else on the screen is in the picture)
 and the room in its different states. Needs the Xcode command line tools for
 the small Swift helper that finds the windows.
@@ -16,16 +18,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)
 
-DEVICE = sys.argv[1] if len(sys.argv) > 1 else "BlackHole 16ch"
-work = tempfile.mkdtemp(prefix="songrande_shots_")
+DEVICE = sys.argv[1] if len(sys.argv) > 1 else ""
+if not DEVICE:
+    os.environ["SONDUGRANDE_AUDIO"] = "offline"
+work = tempfile.mkdtemp(prefix="sondugrande_shots_")
 prefs = os.path.join(work, "prefs.txt")
 with open(prefs, "w") as f:
     f.write("audioDriver=%s\nmidiDriver=\nsamplePrecision=32-bit\nlastFilePath=%s\nlastAudioPath=%s\n" % (DEVICE, work, work))
-os.environ["SONGRANDE_PREFS"] = prefs
+os.environ["SONDUGRANDE_PREFS"] = prefs
 
 import numpy as np                      # noqa: E402
 import wx                               # noqa: E402
-from songrande import app as application, space      # noqa: E402
+from sondugrande import app as application, space      # noqa: E402
 
 helper = os.path.join(work, "winlist")
 subprocess.check_call(["swiftc", "-O", os.path.join(HERE, "winlist.swift"), "-o", helper])
@@ -53,7 +57,7 @@ def photograph(title, name):
 
 class Shots:
     def __init__(self):
-        self.app = application.SongrandeApp(redirect=False)
+        self.app = application.SondugrandeApp(redirect=False)
         self.frame = self.app.frame
         self.frame.Show()
         self.panel = self.frame.panel
@@ -95,7 +99,7 @@ class Shots:
         return 2600
 
     def window(self):
-        photograph("Songrande", "window.png")
+        photograph("Sondugrande", "window.png")
 
     def rooms(self):
         for view in ("3D", "Top", "Front", "Side"):

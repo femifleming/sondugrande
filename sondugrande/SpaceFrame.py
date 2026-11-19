@@ -1,12 +1,12 @@
 """
-Songrande - the Space Controls window: how the room sounds.
+Sondugrande - the Space Controls window: how the room sounds.
 
 Built like SoundGrain's Granulator Controls window, with the same sliders
 (right-click one to learn a MIDI controller).
 
-This file is part of Songrande, a derivative of SoundGrain (Olivier Belanger).
+This file is part of Sondugrande, a derivative of SoundGrain (Olivier Belanger).
 
-Songrande is free software: you can redistribute it and/or modify
+Sondugrande is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.

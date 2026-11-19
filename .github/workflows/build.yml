@@ -1,6 +1,6 @@
 name: build
 
-# Builds Songrande and SoundGrain for macOS, Windows and Linux, runs the tests
+# Builds Sondugrande and SoundGrain for macOS, Windows and Linux, runs the tests
 # and the packaged programs' self-checks (no audio device, no screen needed
 # beyond a virtual one on Linux), and keeps the three archives as artifacts.
 # packaging/release.sh makes a release out of the artifacts of a green run.
@@ -48,7 +48,7 @@ jobs:
         if: runner.os != 'Linux'
         run: |
           python packaging/probe_pyo.py
-          python -m unittest discover -s tests -p "test_songrande*.py"
+          python -m unittest discover -s tests -p "test_sondugrande*.py"
 
       - name: Build (macOS, Windows)
         if: runner.os != 'Linux'
@@ -63,10 +63,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: songrande-${{ matrix.name }}
+          name: sondugrande-${{ matrix.name }}
           path: |
-            dist/songrande-*.zip
-            dist/songrande-*.tar.gz
+            dist/sondugrande-*.zip
+            dist/sondugrande-*.tar.gz
           if-no-files-found: warn
           retention-days: 30
 

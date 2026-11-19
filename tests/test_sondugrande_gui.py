@@ -1,4 +1,4 @@
-"""Songrande: the application itself (needs a display; no audio device).
+"""Sondugrande: the application itself (needs a display; no audio device).
 
 Starts the real application in a process of its own and lets its self-test
 draw in the room through the mouse handlers, play (rendering into a file in
@@ -13,7 +13,7 @@ import subprocess
 import sys
 import unittest
 
-from songrande_helpers import ROOT, TMP
+from sondugrande_helpers import ROOT, TMP
 
 
 def hasDisplay():
@@ -26,7 +26,7 @@ def hasDisplay():
 class ApplicationTests(unittest.TestCase):
     def run_selftest(self, name, *options):
         folder = os.path.join(TMP, name)
-        result = subprocess.run([sys.executable, os.path.join(ROOT, "Songrande.py"), "--selftest", folder,
+        result = subprocess.run([sys.executable, os.path.join(ROOT, "Sondugrande.py"), "--selftest", folder,
                                  "--offline", "--seconds", "4"] + list(options),
                                 capture_output=True, text=True, timeout=300)
         report_path = os.path.join(folder, "report.json")
@@ -54,10 +54,10 @@ class ApplicationTests(unittest.TestCase):
         self.assertEqual(report["channels"], 12)
 
     def test_version(self):
-        result = subprocess.run([sys.executable, os.path.join(ROOT, "Songrande.py"), "--version"],
+        result = subprocess.run([sys.executable, os.path.join(ROOT, "Sondugrande.py"), "--version"],
                                 capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0)
-        self.assertIn("Songrande", result.stdout)
+        self.assertIn("Sondugrande", result.stdout)
         self.assertIn("SoundGrain 6.1.0", result.stdout)
 
 

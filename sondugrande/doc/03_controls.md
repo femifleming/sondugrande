@@ -11,7 +11,7 @@ the mono recording fills the table. Recording stops when the table is full;
 click __Mic Stop__ to stop earlier and keep the captured sound. __Mic__ and
 __Start__ both start the audio server, and playback can run during capture.
 Captured audio is unsaved until exported when prompted. If the input device
-cannot be opened, Songrande falls back to output-only audio when possible.
+cannot be opened, Sondugrande falls back to output-only audio when possible.
  
 ______________________________________________________________________________
 

@@ -2,9 +2,9 @@
 """
 Copyright 2009-2017 Olivier Belanger (SoundGrain)
 
-This file is part of Songrande, a derivative of SoundGrain.
+This file is part of Sondugrande, a derivative of SoundGrain.
 
-Songrande is free software: you can redistribute it and/or modify
+Sondugrande is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -257,7 +257,7 @@ class MainFrame(wx.Frame):
         menu5 = wx.Menu()
         helpItem = menu5.Append(wx.ID_ABOUT, '&About %s %s' % (NAME, SG_VERSION))
         self.Bind(wx.EVT_MENU, self.showAbout, helpItem)
-        commands = menu5.Append(501, "Open Songrande Documentation\tCtrl+H")
+        commands = menu5.Append(501, "Open Sondugrande Documentation\tCtrl+H")
         self.Bind(wx.EVT_MENU, self.openCommandsPage, commands)
         self.menuBar.Append(menu5, '&Help')
 
@@ -590,11 +590,11 @@ class MainFrame(wx.Frame):
         self.loadFile(os.path.join(RESOURCES_PATH, NEW_FILE))
 
     def handleOpen(self, evt):
-        dlg = wx.FileDialog(self, message="Open a Songrande or SoundGrain file...",
+        dlg = wx.FileDialog(self, message="Open a Sondugrande or SoundGrain file...",
                             defaultDir=self.lastFilePath,
                             defaultFile="",
-                            wildcard="Songrande and SoundGrain files (*.sgr;*.sg)|*.sgr;*.sg|"
-                                     "Songrande file (*.sgr)|*.sgr|SoundGrain file (*.sg)|*.sg",
+                            wildcard="Sondugrande and SoundGrain files (*.sgr;*.sg)|*.sgr;*.sg|"
+                                     "Sondugrande file (*.sgr)|*.sgr|SoundGrain file (*.sg)|*.sg",
                             style=wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
@@ -640,7 +640,7 @@ class MainFrame(wx.Frame):
         self.controls.handleInsert()
 
     def handleSave(self, evt):
-        # a SoundGrain project that was opened is saved as a new Songrande file
+        # a SoundGrain project that was opened is saved as a new Sondugrande file
         if self.currentFile and self.currentFile.lower().endswith("." + PROJECT_EXT):
             self.saveFile(self.currentFile)
         else:
@@ -650,7 +650,7 @@ class MainFrame(wx.Frame):
         dlg = wx.FileDialog(self, message="Save file as ...",
                             defaultDir=self.lastFilePath,
                             defaultFile="Granulator.%s" % PROJECT_EXT,
-                            wildcard="Songrande file (*.sgr)|*.sgr",
+                            wildcard="Sondugrande file (*.sgr)|*.sgr",
                             style=wx.FD_SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
@@ -1025,12 +1025,12 @@ class MainFrame(wx.Frame):
     def showAbout(self, evt):
         info = AboutDialogInfo()
 
-        description = "Songrande is SoundGrain in a room: draw where the sound moves " \
+        description = "Sondugrande is SoundGrain in a room: draw where the sound moves " \
         "in three dimensions, the same way SoundGrain lets you draw on the sound. " \
         "Every trajectory is a granular stream and a source in space, encoded to " \
         "Ambisonics (ACN / SN3D, 1st to 7th order) and heard on headphones, " \
         "loudspeakers or sent on to a decoder.\n\n" \
-        "Songrande is a development of SoundGrain %s by Olivier Belanger, a graphical " \
+        "Sondugrande is a development of SoundGrain %s by Olivier Belanger, a graphical " \
         "interface where users can draw and edit trajectories to control granular " \
         "sound synthesis. Like SoundGrain it is written with Python and WxPython " \
         "and uses pyo as its audio engine, and it is free software under the GNU " \
@@ -1039,5 +1039,5 @@ class MainFrame(wx.Frame):
         info.SetName(NAME)
         info.SetVersion('%s' % SG_VERSION)
         info.SetDescription(description)
-        info.SetCopyright(u'SoundGrain (C) 2009-2018 Olivier Belanger\nSongrande (C) %s femifleming' % SG_YEAR)
+        info.SetCopyright(u'SoundGrain (C) 2009-2018 Olivier Belanger\nSondugrande (C) %s femifleming' % SG_YEAR)
         AboutBox(info)

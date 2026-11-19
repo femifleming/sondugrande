@@ -1,4 +1,4 @@
-"""Songrande: the geometry of the room and the trajectories in it (no display, no audio).
+"""Sondugrande: the geometry of the room and the trajectories in it (no display, no audio).
 
 Run with python3 -m unittest discover -s tests
 """
@@ -9,10 +9,10 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from songrande_helpers import roomPoints
-from songrande import space
-from songrande.Trajectory import Trajectory, onSphere
-from songrande.scene import Scene, Ball, legacyFactors
+from sondugrande_helpers import roomPoints
+from sondugrande import space
+from sondugrande.Trajectory import Trajectory, onSphere
+from sondugrande.scene import Scene, Ball, legacyFactors
 
 
 class CoordinateTests(unittest.TestCase):

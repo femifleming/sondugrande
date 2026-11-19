@@ -1,9 +1,9 @@
 """
-Songrande - the application object (SoundGrain's, with the room in place of
+Sondugrande - the application object (SoundGrain's, with the room in place of
 the drawing surface).
 
 Copyright 2009-2017 Olivier Belanger (SoundGrain). This file is part of
-Songrande, a derivative of SoundGrain, released under the GNU General Public
+Sondugrande, a derivative of SoundGrain, released under the GNU General Public
 License version 3 or later.
 """
 import sys
@@ -14,7 +14,7 @@ from .splash import SoundGrainSplashScreen
 from .MainFrame import MainFrame
 
 
-class SongrandeApp(wx.App):
+class SondugrandeApp(wx.App):
     def __init__(self, *args, **kwargs):
         wx.App.__init__(self, *args, **kwargs)
         self.SetAppName(NAME)
@@ -51,7 +51,7 @@ class SongrandeApp(wx.App):
 
 
 def run(project=None, splash=True):
-    app = SongrandeApp(redirect=False)
+    app = SondugrandeApp(redirect=False)
     if splash:
         SoundGrainSplashScreen(None, SPLASH_FILE, app.frame)
     else:
