@@ -120,8 +120,9 @@ class Scene:
             pos = t.getPointPos()
             if pos is not None:
                 x, y = space.grain_xy(pos, t.getPhase(), self.xSource, self.ySource)
-                self.audio.setXposition(which, x)
+                # Y first: the place in the sound takes the grains' pitch and length into account
                 self.audio.setYposition(which, y)
+                self.audio.setXposition(which, x)
                 self.audio.setSpatial(which, pos)
                 for ball in list(self.fxballs.values()):
                     self.audio.setMixerChannelAmp(which, ball.getId(), ball.getAmpValue(pos))
@@ -341,6 +342,8 @@ class Scene:
     def moveTrajectory(self, t, offset, centre=None):
         """Move by (start - now); centre is where the shape's centre was at the start."""
         offset = self.clipOffset(t, _p3(offset))
+        if any(abs(v) > 1e-9 for v in offset):
+            t.sphere = None        # it has left the sphere it was drawn on
         t.move(offset)
         if t.getType() in SHAPES and centre is not None:
             t.setCenter(tuple(centre[k] - offset[k] for k in range(3)))
@@ -361,6 +364,7 @@ class Scene:
         t.setInitPoints()
 
     def endEdit(self, t):
+        t.sphere = None
         if self.fillPoints:
             t.fillPoints(False)
         t.setInitPoints()
@@ -466,6 +470,10 @@ class Scene:
             t.basis = [vector(b) for b in t.basis]
         if operation == 'scale' and t.radius:
             t.radius = t.radius * amount
+        if operation == 'sphere' and t.getType() in SHAPES:
+            t.sphere = amount
+        else:
+            t.sphere = None        # it has left the sphere it was drawn on
         if t.getType() in SHAPES:
             t.geometryTransformed = True
         t.setInitPoints()

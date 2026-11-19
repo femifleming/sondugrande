@@ -174,13 +174,12 @@ def encode(pos, order, spread=0.0, near=0.12):
     p = np.asarray(pos, dtype=float)
     r = np.linalg.norm(p, axis=-1)
     y = sh(normalise(p), order)
-    factor = np.minimum(1.0, r / max(near, 1e-6)) * (1.0 - max(0.0, min(1.0, spread)))
+    wide = 1.0 - max(0.0, min(1.0, spread))
+    factor = np.minimum(1.0, r / max(near, 1e-6)) * wide
     l = acn_orders(order)
     weights = np.power(np.asarray(factor)[..., None], l)
-    full = sum(2 * k + 1 for k in range(order + 1))
-    now = sum((2 * k + 1) * np.asarray(factor) ** (2 * k) for k in range(order + 1))
-    makeup = (full / now) ** 0.25
-    return y * weights * np.asarray(makeup)[..., None]
+    # a wide source is made up in level; a near one is not (the distance model already raises it)
+    return y * weights * spread_gain(order, wide)
 
 
 def rotate_z(points, angle):
@@ -579,7 +578,6 @@ def binaural_filters(order, tables, sr=44100.0, taps=96, crossover=1500.0):
     cut[:, -fade:] *= 0.5 * (1.0 + np.cos(np.linspace(0, math.pi, fade)))
     cut[:, :2] *= np.array([0.5, 1.0])[None, :]
     # level: an ear hears a sound from anywhere at unity on average
-    level = np.mean(np.sum((sh(dirs, order) @ cut) ** 2, axis=1) * w0) * len(w0) / len(w0)
     level = float(np.sum(np.sum((sh(dirs, order) @ cut) ** 2, axis=1) * w0))
     cut /= math.sqrt(max(level, 1e-12))
     signs = np.where(acn_degrees(order) < 0, -1.0, 1.0)

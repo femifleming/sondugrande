@@ -193,6 +193,8 @@ class Granulator_Stream:
         self.chain = []
         self.placed = False
         self.glide = 0.025
+        self.transpoValue = 1.0
+        self.yValues = {}
         self.ringTurn = random.uniform(0, 2 * math.pi)
         self.ringRate = random.uniform(0.15, 0.45) * random.choice([-1, 1])
         self.wobblePhase = [random.uniform(0, 2 * math.pi) for i in range(CLOUD)]
@@ -359,6 +361,9 @@ class SG_Audio:
         self.ctlscan_callback = None
         self.bindings = {}
         self.space = dict(SPACE_DEFAULTS)
+        self.basePitchValue = 1.0
+        self.grainDurValue = 0.2
+        self.tableDur = 1.0
         self.order = 3
         self.nch = 16
         self.booted = False
@@ -736,6 +741,7 @@ class SG_Audio:
 
     def useTable(self, table):
         self.table = table
+        self.tableDur = float(table.getDur(False))
         self.pos_rnd = Sig(self.pos_noise, self.table.getSize(False))
         for gr in self.streams.values():
             gr.create_granulator(self.table, self.pos_rnd)
@@ -781,6 +787,7 @@ class SG_Audio:
     def insertSnd(self, sndPath, start, end, point, cross):
         self.table.insert(sndPath, point, cross, start, end)
         self.pos_rnd.mul = self.table.getSize(False)
+        self.tableDur = float(self.table.getDur(False))
         for gr in self.streams.values():
             gr.ajustLength()
         if self.server.getIsStarted():
@@ -817,11 +824,13 @@ class SG_Audio:
         self.dens_noise.max = x
 
     def setBasePitch(self, x):
+        self.basePitchValue = x
         for gr in self.streams.values():
             gr.setBasePitch(x)
 
     def setGrainDur(self, x):
         x *= 0.001
+        self.grainDurValue = x
         self.dur_noise.add = x
         self.dur_noise.mul = x
 
@@ -875,6 +884,7 @@ class SG_Audio:
         if not getattr(self, "streams", None):
             return
         self.streams[which].transpo.value = x
+        self.streams[which].transpoValue = x
 
     def setTrajAmplitude(self, which, x):
         if not getattr(self, "streams", None):
@@ -898,7 +908,14 @@ class SG_Audio:
             return
         if self.streams[which].granulator is None:
             return
-        self.streams[which].position.value = x
+        # A grain that would run past the end of the sound is not played at all,
+        # so in SoundGrain a trajectory falls silent at the right edge of the
+        # surface. Here that edge is a wall of the room: hold the place in the
+        # sound at the last one a whole grain still fits after.
+        st = self.streams[which]
+        pitch = abs(self.basePitchValue * st.transpoValue * st.yValues.get("y_pit", 1.0))
+        need = self.grainDurValue * st.yValues.get("y_len", 1.0) * pitch * 1.15 / max(self.tableDur, 1e-6)
+        st.position.value = min(max(x, 0.0), max(0.0, 0.997 - need))
 
     def setYposition(self, which, x):
         if not getattr(self, "streams", None):
@@ -919,7 +936,9 @@ class SG_Audio:
                         val = floatmap((x-0.5)*2.0, rng[3], rng[1], rng[2])
                 getattr(self.streams[which], param).value = val
             else:
+                val = defval
                 getattr(self.streams[which], param).value = defval
+            self.streams[which].yValues[param] = val
         return
 
     def setActive(self, which, val):

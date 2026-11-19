@@ -268,7 +268,8 @@ class Trajectory:
                 factor = min(factor, max(0.0, (high - point[k]) / delta))
             elif delta < -1e-9 and moved[k] < low:
                 factor = min(factor, max(0.0, (low - point[k]) / delta))
-        return tuple(point[k] + (moved[k] - point[k]) * factor for k in range(3))
+        return tuple(min(max(point[k] + (moved[k] - point[k]) * factor, limits[k][0]), limits[k][1])
+                     for k in range(3))
 
     # ------------------------------------------------------------------
     def clear(self):
@@ -493,6 +494,9 @@ class Trajectory:
                     templist.append(p)
         templist.append(lp(self.points[-1]))
         templist.append(tuple(self.points[-1]))
+        if self.sphere:
+            # a shape drawn on a sphere stays on it: the points put in between go back out to it
+            templist = [onSphere(p, self.sphere) for p in templist]
         self.points = [(p[0], p[1], p[2]) for p in templist]
 
     def setInitPoints(self):

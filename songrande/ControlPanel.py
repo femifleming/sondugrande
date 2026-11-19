@@ -81,6 +81,7 @@ class ControlPanel(scrolled.ScrolledPanel):
         typeBox = wx.BoxSizer(wx.HORIZONTAL)
         popupBox = wx.BoxSizer(wx.VERTICAL)
         self.trajType = wx.Choice(self, -1, choices = TRAJNAMES)
+        self.trajType.SetMinSize((max(96, self.trajType.GetBestSize().width), -1))
         self.trajType.SetSelection(0)
         popupBox.Add(self.trajType)
         typeBox.Add(popupBox, 0, wx.CENTER|wx.RIGHT, 5)
