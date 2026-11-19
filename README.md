@@ -66,6 +66,7 @@ The floor is SoundGrain's surface: left to right is the place in the sound, back
 - **Source spread**, a **room reverb** that comes from all round and is wetter for far sounds, **scene turn** by an angle or steadily.
 - **Flock**: the balls leave their lines and fly together as boids, each on a leash to its own trajectory.
 - **FX balls are spheres in the room**: a stream goes through the effect while it is inside the ball, and the effect's sound comes out from where the ball is.
+- **Twenty FX balls**: SoundGrain's ten, and ten more after Pinkie Pie's Balloon Palace (Snow, Heat, Rpeg Ring Mod, Spectral Gate, Wind, Fog) and Airwindows (Galactic, ToTape, Distance, Ensemble).
 - **Playback direction** per trajectory: forward, backward, back and forth. A wide trajectory is a tube the ball corkscrews round.
 - **Mirrored twin**, flips, turns, tilts, wrap onto the sphere.
 

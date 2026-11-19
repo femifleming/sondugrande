@@ -1,5 +1,14 @@
 # What's New
 
+## Sondugrande, 19 Nov 2026
+
+- **Ten more FX balls**, after Pinkie Pie's Balloon Palace (Snow, Heat, Rpeg Ring Mod, Spectral Gate,
+  Wind, Fog) and Airwindows (Galactic, ToTape, Distance, Ensemble), in the FxBall menu below
+  SoundGrain's ten.
+- **The envelope window is legible in dark mode** (SoundGrain and Sondugrande): pyo's envelope editor
+  cleared with the drawing context's default brush, which a dark appearance made dark, so the black
+  envelope line all but vanished. It now clears with its own white panel.
+
 ## 6.1.0
 
 ### Installation

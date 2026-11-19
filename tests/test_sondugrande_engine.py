@@ -299,7 +299,9 @@ class SceneSoundTests(unittest.TestCase):
 
     def test_every_effect_gives_out_sound_and_never_a_nan(self):
         ball_at = roomPoints([roomAt(-90, 0, 0.8)])[0]
-        for fx in range(10):
+        from sondugrande.constants import FX_BALL_COUNT
+        self.assertEqual(FX_BALL_COUNT, 20)
+        for fx in range(FX_BALL_COUNT):
             with self.subTest(fx=fx):
                 def inside(scene, fx=fx):
                     scene.addTrajectory('line', points=[ball_at, (ball_at[0] + 1e-3, ball_at[1], ball_at[2])])

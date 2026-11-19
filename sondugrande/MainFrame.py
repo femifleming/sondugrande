@@ -52,6 +52,20 @@ def silenceSliderCallbacks(window):
     for child in window.GetChildren():
         silenceSliderCallbacks(child)
 
+class EnvelopeGraph(Grapher):
+    """pyo's Grapher, cleared with its own white before it draws. It draws the envelope in black
+    and clears with the drawing context's default brush, which a dark system appearance makes
+    dark: the line then all but vanished against the panel."""
+    def __init__(self, *args, **kwargs):
+        Grapher.__init__(self, *args, **kwargs)
+        self._makeDC = self.dcref                # pyo's choice: a buffered or a plain paint DC
+        self.dcref = self._lightDC
+
+    def _lightDC(self, win):
+        dc = self._makeDC(win)
+        dc.SetBackground(wx.Brush(wx.Colour(self.backgroundColour)))
+        return dc
+
 class EnvelopeFrame(wx.Frame):
     def __init__(self, parent, size=(600, 300)):
         wx.Frame.__init__(self, parent, -1, "Envelope Shape", size=size)
@@ -66,7 +80,7 @@ class EnvelopeFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.handleClose)
         self.Bind(wx.EVT_MENU, self.handleClose, id=200)
 
-        self.graph = Grapher(self, init=[(0.0,0),(0.3,1),(0.7,1),(1.0,0)], mode=1)
+        self.graph = EnvelopeGraph(self, init=[(0.0,0),(0.3,1),(0.7,1),(1.0,0)], mode=1)
 
         self.Show(False)
 
@@ -250,7 +264,10 @@ class MainFrame(wx.Frame):
         self.menu4.Append(407, "Add Clipper ball\tCtrl+8", "")
         self.menu4.Append(408, "Add Flanger ball\tCtrl+9", "")
         self.menu4.Append(409, "Add Detuned Resonator ball\tCtrl+0", "")
-        for i in range(10):
+        self.menu4.AppendSeparator()
+        for i in range(10, FX_BALL_COUNT):                     # after the Balloon Palace and Airwindows
+            self.menu4.Append(400 + i, "Add %s ball" % FX_BALL_TITLES[i], "")
+        for i in range(FX_BALL_COUNT):
             self.Bind(wx.EVT_MENU, self.addFxBall, id=400+i)
         self.menuBar.Append(self.menu4, "&FxBall")
 

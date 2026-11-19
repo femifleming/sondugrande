@@ -11,3 +11,9 @@ Every request typed while Sondugrande (first called Songrande) was designed and 
 ## 2026-11-19
 
 > chang the ane of Songrande to Sondugrande and make sure it works on mac and windows, and then make a pdf manual for it and push it when its done.
+
+> to sondgrande, add even more effects balls. also there is a bug in soundgrain, and make sure its also fixed in songrande that the envelope window, the color of the envelope line is black, agaisnt a dark background and its hard to see where the envelope is.
+
+> Sondugrande is rhe spatial soundgrain, youve allready made it so check weather its implemented, its already completed and pushed, teh onyl thhings that need to chanage with that are the envlope editor window clariy and adding more cool effects balls.
+
+> for the more effects balls take inspo for pinkie pies baloon palace and airwindows.

@@ -163,7 +163,23 @@ def getColors(col, gradient):
     elif col == 9:
         firstColor = wx.Colour(127,30,255)
         secondColor = wx.Colour(gradient//2,30,gradient)
+    else:
+        # the balls after the Balloon Palace and Airwindows: their own colours, the same falloff
+        r, g, b = MORE_BALL_COLOURS.get(col, (200, 200, 200))
+        firstColor = wx.Colour(r, g, b)
+        secondColor = wx.Colour(r * gradient // 255, g * gradient // 255, b * gradient // 255)
     return firstColor, secondColor
+
+MORE_BALL_COLOURS = {10: (210, 240, 255),   # Snow: ice
+                     11: (255, 160, 60),    # Heat
+                     12: (255, 220, 120),   # Rpeg
+                     13: (120, 255, 200),   # Spectral gate
+                     14: (170, 210, 170),   # Wind
+                     15: (160, 170, 190),   # Fog
+                     16: (90, 120, 255),    # Galactic
+                     17: (200, 140, 90),    # ToTape
+                     18: (150, 200, 255),   # Distance
+                     19: (255, 120, 220)}   # Ensemble
 
 def GetRoundMaskBitmap(w, h, radius):
     w, h = max(1, int(round(w))), max(1, int(round(h)))

@@ -92,7 +92,11 @@ AUDIO_WILDCARD = "All Files |*.*|" \
 
 FX_BALL_TITLES = {0: "Reverb", 1: "Delay", 2: "Disto", 3: "Waveguide", 
                     4: "Complex Resonator", 5: "Degrade", 6: "Harmonizer", 
-                    7: "Clipper", 8: "Flanger", 9: "AllpassWG"}
+                    7: "Clipper", 8: "Flanger", 9: "AllpassWG",
+                    # after Pinkie Pie's Balloon Palace
+                    10: "Snow", 11: "Heat", 12: "Rpeg Ring Mod", 13: "Spectral Gate", 14: "Wind", 15: "Fog",
+                    # after Airwindows (Chris Johnson): the ideas, rebuilt from pyo's parts
+                    16: "Galactic", 17: "ToTape", 18: "Distance", 19: "Ensemble"}
 
 FX_BALL_SLIDER_1_INIT = {   0: ["Feedback", 0, 1, .75, False],
                             1: ["Delay", 0.01, 1, 0.25, False],
@@ -104,6 +108,16 @@ FX_BALL_SLIDER_1_INIT = {   0: ["Feedback", 0, 1, .75, False],
                             7: ["Threshold", 0.001, 0.25, 0.1, True],
                             8: ["LFO Freq", 0.1, 20, 0.2, True],
                             9: ["Frequency", 20, 500, 100, True],
+                            10: ["Freeze", 0, 1, 0.8, False],
+                            11: ["Smear", 0, 1, 0.7, False],
+                            12: ["Frequency", 20, 4000, 300, True],
+                            13: ["Threshold (dB)", -90, 0, -30, False],
+                            14: ["Gusts (Hz)", 0.05, 5, 0.5, True],
+                            15: ["Thickness", 0, 0.9, 0.6, False],
+                            16: ["Size (s)", 1, 30, 12, True],
+                            17: ["Delay", 0.05, 1.5, 0.33, True],
+                            18: ["Distance", 0, 1, 0.5, False],
+                            19: ["Depth", 0, 1, 0.5, False],
                         }
 
 FX_BALL_SLIDER_2_INIT = {   0: ["Cutoff", 100, 15000, 5000, True],
@@ -116,7 +130,19 @@ FX_BALL_SLIDER_2_INIT = {   0: ["Cutoff", 100, 15000, 5000, True],
                             7: ["Cutoff", 100, 15000, 5000, True],
                             8: ["Feedback", 0, 1, 0.5, False],
                             9: ["Detune", 0, 1, 0.5, False],
+                            10: ["Frost (Hz)", 500, 15000, 8000, True],
+                            11: ["Shimmer", 0, 1, 0.3, False],
+                            12: ["Follow", 0, 1, 0.5, False],
+                            13: ["Damp", 0, 1, 0, False],
+                            14: ["Bend", 0, 1, 0.5, False],
+                            15: ["Cutoff", 300, 12000, 3000, True],
+                            16: ["Drift", 0, 5, 2, False],
+                            17: ["Feedback", 0, 0.95, 0.45, False],
+                            18: ["Air", 0, 1, 0.3, False],
+                            19: ["Speed", 0.1, 4, 1, True],
                         }
+
+FX_BALL_COUNT = len(FX_BALL_TITLES)
 
 def ensureNFD(unistr):
     if unistr == None:

@@ -174,6 +174,8 @@ class Fx:
             self.process = self.input + self.flange
         elif fx == 9:
             self.process = AllpassWG(self.input, freq=100, feed=0.999, detune=0.5, mul=.3)
+        elif fx >= 10:
+            self._makeMore(fx)
         self.level = SigTo(value=1, time=0.05, init=1)
         self.out = Sig(self.process, mul=self.level)
         self.spread = 0.25
@@ -181,6 +183,129 @@ class Fx:
         self.enc = SigTo(value=[0.0] * nch, time=0.05, init=0.0, mul=self.out)
         # kept for SoundGrain's name: what goes to the bus
         self.pan = self.enc
+
+    # ------------------------------------------------------------------
+    # the balls after Pinkie Pie's Balloon Palace (10-15) and Airwindows (16-19). Each keeps
+    # its two controls in set1 / set2; their ranges are in constants.FX_BALL_SLIDER_*_INIT.
+    # ------------------------------------------------------------------
+    def _makeMore(self, fx):
+        if fx == 10:
+            # Snow: the spectrum held ringing, the way the Balloon Palace's snow freezes it. A
+            # spectral reverb near infinite holds every partial; Frost is how bright the ice is.
+            self.pva = PVAnal(self.input, size=4096, overlaps=8)
+            self.pvv = PVVerb(self.pva, revtime=self.snowTime(0.8), damp=0.995)
+            self.frost = SigTo(value=8000, time=0.05, init=8000)
+            self.process = Tone(PVSynth(self.pvv, mul=0.6), freq=self.frost)
+        elif fx == 11:
+            # Heat: the sound melts into a slow wash that keeps drifting (the palace's heatwave):
+            # every partial is smeared over seconds and its frequency wanders a little.
+            self.pva = PVAnal(self.input, size=4096, overlaps=8)
+            self.pvm = PVFreqMod(self.pva, basefreq=0.07, spread=0.6, depth=0.03)
+            self.pvv = PVVerb(self.pvm, revtime=self.heatTime(0.7), damp=0.85)
+            self.process = PVSynth(self.pvv, mul=0.6)
+        elif fx == 12:
+            # Rpeg: a ring modulator whose carrier climbs with the input's loudness (the palace's
+            # ring modulator, after the ring-modulated hats on Autechre's Rpeg)
+            self.rbase = SigTo(value=300, time=0.05, init=300)
+            self.rfollow = SigTo(value=0.5, time=0.05, init=0.5)
+            self.env = Follower(self.input, freq=12)
+            self.carrier = Sine(freq=self.rbase * (1 + self.env * self.rfollow * 8))
+            self.process = self.input * self.carrier
+        elif fx == 13:
+            # Spectral gate: only the partials above the threshold come through (the palace's
+            # spectral gate); Damp lets the quiet ones through softened instead of cut
+            self.pva = PVAnal(self.input, size=2048, overlaps=4)
+            self.pvg = PVGate(self.pva, thresh=-30, damp=0.0)
+            self.process = PVSynth(self.pvg)
+        elif fx == 14:
+            # Wind: gusts bend the pitch (the palace's wind) -- a short delay pushed about by a
+            # slow random gust and a quicker flutter
+            self.wrate = SigTo(value=0.5, time=0.05, init=0.5)
+            self.wdepth = SigTo(value=0.5, time=0.05, init=0.5)
+            self.gust = Randi(min=0, max=1, freq=self.wrate)
+            self.flutter = Randi(min=-1, max=1, freq=self.wrate * 7)
+            self.process = Delay(self.input, delay=0.002 + (self.gust + self.flutter * 0.15) * self.wdepth * 0.012, maxdelay=0.05)
+        elif fx == 15:
+            # Fog: every attack blurred (the palace's fog) -- a mist of five allpasses, then darker
+            self.ffb = SigTo(value=0.6, time=0.05, init=0.6)
+            self.fcut = SigTo(value=3000, time=0.05, init=3000)
+            a = self.input
+            self.fogs = []
+            for d in (0.0131, 0.0179, 0.0233, 0.0311, 0.0419):
+                a = Allpass(a, delay=d, feedback=self.ffb, maxdelay=0.05)
+                self.fogs.append(a)
+            self.process = Tone(a, freq=self.fcut)
+        elif fx == 16:
+            # Galactic (after Airwindows' Galactic): a huge, dark-edged reverb whose tail drifts
+            self.gtime = SigTo(value=12, time=0.1, init=12)
+            self.gdrift = SigTo(value=2.0, time=0.05, init=2.0)
+            self.rev = STRev(self.input, inpos=0.5, revtime=self.gtime, cutoff=7000, bal=1, roomSize=2.5, firstRefGain=-20)
+            self.process = Chorus(Mix(self.rev, voices=1), depth=self.gdrift, feedback=0.3, bal=0.6, mul=0.6)
+        elif fx == 17:
+            # ToTape (after Airwindows' ToTape): a tape echo -- wow and flutter on the head, the
+            # tape's soft saturation and lost top in the loop. Changing the time glides, as tape does.
+            self.ttime = SigTo(value=0.33, time=0.3, init=0.33)
+            self.tfb = SigTo(value=0.45, time=0.05, init=0.45)
+            self.tloop = Sig(0)                                  # what comes back, one block late
+            self.wow = Sine(freq=0.55, mul=0.0018) + Randi(min=-0.0006, max=0.0006, freq=9)
+            self.tdel = Delay(self.input + self.tloop, delay=self.ttime + self.wow, maxdelay=2.0)
+            self.process = Tanh(ButLP(self.tdel, freq=4800) * 1.6, mul=0.6)
+            self.tloop.value = self.process * self.tfb
+        elif fx == 18:
+            # Distance (after Airwindows' Distance): the sound far off -- later, quieter, the air
+            # taking its top. Air is how much more the air takes.
+            self.dpre = SigTo(value=0.04, time=0.1, init=0.04)
+            self.dcut = SigTo(value=4800, time=0.1, init=4800)
+            self.dair = SigTo(value=11800, time=0.1, init=11800)
+            self.dlev = SigTo(value=0.5, time=0.1, init=0.5)
+            self.process = Tone(Tone(Delay(self.input, delay=self.dpre, maxdelay=0.2), freq=self.dcut), freq=self.dair, mul=self.dlev)
+            self.set1(0.5); self.set2(0.3)
+        elif fx == 19:
+            # Ensemble (after Airwindows' Ensemble): six voices, each its own slow drift
+            self.edepth = SigTo(value=0.5, time=0.05, init=0.5)
+            self.espeed = SigTo(value=1.0, time=0.05, init=1.0)
+            rates = (0.31, 0.47, 0.61, 0.83, 1.07, 1.29)
+            self.elfo = Sine(freq=[self.espeed * r for r in rates], phase=[i / 6.0 for i in range(6)], mul=self.edepth * 0.006, add=0.012)
+            self.edel = Delay(self.input, delay=self.elfo, maxdelay=0.05)
+            self.process = Mix(self.edel, voices=1, mul=0.35)
+
+    @staticmethod
+    def snowTime(v):
+        return 0.85 + 0.149 * min(max(float(v), 0.0), 1.0)          # Freeze 0..1: long .. held
+
+    @staticmethod
+    def heatTime(v):
+        return 0.6 + 0.38 * min(max(float(v), 0.0), 1.0)
+
+    def set1(self, val):
+        fx, val = self.fx, float(val)
+        if fx == 10: self.pvv.revtime = self.snowTime(val)
+        elif fx == 11: self.pvv.revtime = self.heatTime(val)
+        elif fx == 12: self.rbase.value = val
+        elif fx == 13: self.pvg.thresh = val
+        elif fx == 14: self.wrate.value = val
+        elif fx == 15: self.ffb.value = min(val, 0.9)
+        elif fx == 16: self.gtime.value = val
+        elif fx == 17: self.ttime.value = val
+        elif fx == 18:
+            d = min(max(val, 0.0), 1.0)
+            self.dpre.value = 0.001 + 0.08 * d
+            self.dcut.value = 18000.0 * (1.0 - d) ** 2 + 400.0
+            self.dlev.value = 1.0 / (1.0 + 2.0 * d)
+        elif fx == 19: self.edepth.value = val
+
+    def set2(self, val):
+        fx, val = self.fx, float(val)
+        if fx == 10: self.frost.value = val
+        elif fx == 11: self.pvm.depth = 0.1 * min(max(val, 0.0), 1.0)
+        elif fx == 12: self.rfollow.value = val
+        elif fx == 13: self.pvg.damp = min(max(val, 0.0), 1.0)
+        elif fx == 14: self.wdepth.value = val
+        elif fx == 15: self.fcut.value = val
+        elif fx == 16: self.gdrift.value = val
+        elif fx == 17: self.tfb.value = min(val, 0.95)
+        elif fx == 18: self.dair.value = 16000.0 - 14000.0 * min(max(val, 0.0), 1.0)
+        elif fx == 19: self.espeed.value = val
 
     def harmonizerRate(self, semitones):
         """How fast the delays must sweep to transpose by that many semitones."""
@@ -1106,6 +1231,8 @@ class SG_Audio:
             self.fxs[key].lfo.freq = val
         elif fx == 9:
             self.fxs[key].process.freq = val
+        elif fx >= 10:
+            self.fxs[key].set1(val)
 
     def handleFxSlider2(self, fx, key, val):
         if fx == 0:
@@ -1128,6 +1255,8 @@ class SG_Audio:
             self.fxs[key].flange.feedback = val
         elif fx == 9:
             self.fxs[key].process.detune = val
+        elif fx >= 10:
+            self.fxs[key].set2(val)
 
     def handleFxMul(self, key, val):
         self.fxs[key].level.value = val
