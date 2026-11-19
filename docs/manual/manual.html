@@ -1,0 +1,354 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Songrande Manual</title>
+<style>
+@page{size:A4;margin:17mm 16mm 17mm 16mm}
+body{font:10pt/1.46 "Helvetica Neue",Helvetica,Arial,sans-serif;color:#1c1c1c;background:#fff;margin:0}
+h1{font-size:38pt;font-weight:300;letter-spacing:.02em;margin:0;color:#1e1e1e}
+h2{font-size:14pt;font-weight:600;color:#b82020;border-bottom:1.2pt solid #b82020;padding-bottom:3pt;margin:0 0 9pt;break-after:avoid}
+h3{font-size:10.6pt;font-weight:700;margin:11pt 0 3pt;break-after:avoid}
+p{margin:0 0 7pt}
+section{break-before:page}
+.cover{height:255mm;display:flex;flex-direction:column;justify-content:center;text-align:center;break-before:auto}
+.cover img.shot{width:100%;border-radius:6pt;margin:10mm 0 7mm}
+.cover img.icon{width:26mm;margin:0 auto 6mm}
+.cover .sub{font-size:12pt;color:#444}
+.cover .small{font-size:9pt;color:#777}
+table{border-collapse:collapse;width:100%;margin:4pt 0 10pt;font-size:9.5pt}
+th{text-align:left;border-bottom:1pt solid #1c1c1c;padding:3pt 6pt 3pt 0;font-size:8.6pt;text-transform:uppercase;letter-spacing:.04em}
+td{border-bottom:.4pt solid #c9c9c9;padding:3.5pt 8pt 3.5pt 0;vertical-align:top}
+tr{break-inside:avoid}
+td:first-child{font-weight:600;width:33%}
+table.keys td:first-child{white-space:nowrap;width:auto}
+img.fig{width:100%;border-radius:4pt;margin:4pt 0 2pt;display:block}
+img.half{width:62%;margin:4pt auto 2pt;display:block;border-radius:4pt}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9pt}
+.cap{font-size:8.8pt;color:#666;margin-bottom:9pt}
+ol,ul{margin:0 0 8pt;padding-left:16pt} li{margin-bottom:3pt}
+.box{border:1pt solid #b82020;border-radius:4pt;padding:7pt 9pt;margin:6pt 0 10pt;background:#fbf3f3}
+code,kbd{font:9pt Menlo,Consolas,monospace;background:#f0f0f0;padding:0 2pt;border-radius:2pt}
+pre{font:8.6pt/1.4 Menlo,Consolas,monospace;background:#f0f0f0;padding:6pt 8pt;border-radius:4pt;margin:4pt 0 9pt;white-space:pre-wrap}
+.toc td{border-bottom:.4pt dotted #bbb}.toc td:first-child{font-weight:400;width:auto}
+.red{color:#b82020}
+</style></head><body>
+
+<div class="cover">
+<img class="icon" src="../icon.png">
+<h1>songrande</h1>
+<p class="sub" style="margin-top:5mm">SoundGrain in a room: draw where the sound moves</p>
+<img class="shot" src="window.png">
+<p>M A N U A L</p>
+<p class="small">version 1.0 &nbsp;&middot;&nbsp; a development of SoundGrain 6.1 by Olivier B&eacute;langer &nbsp;&middot;&nbsp; GNU General Public License 3</p>
+</div>
+
+<section>
+<h2>Contents</h2>
+<table class="toc">
+<tr><td>1. What Songrande is</td></tr>
+<tr><td>2. Installing it</td></tr>
+<tr><td>3. A first sound</td></tr>
+<tr><td>4. The window</td></tr>
+<tr><td>5. Looking at the room</td></tr>
+<tr><td>6. Drawing in three dimensions</td></tr>
+<tr><td>7. Changing what you drew</td></tr>
+<tr><td>8. Playing: timer, step, direction, width</td></tr>
+<tr><td>9. The grains: SoundGrain's X and Y in a room</td></tr>
+<tr><td>10. FX balls</td></tr>
+<tr><td>11. The Space Controls</td></tr>
+<tr><td>12. Where the sound goes: headphones, loudspeakers, Ambisonics</td></tr>
+<tr><td>13. Recording and rendering</td></tr>
+<tr><td>14. MIDI</td></tr>
+<tr><td>15. Projects, and SoundGrain itself</td></tr>
+<tr><td>16. If something seems wrong</td></tr>
+<tr><td>17. Every mouse action and key</td></tr>
+<tr><td>18. How it works, sources and credits</td></tr>
+</table>
+
+<h2 style="margin-top:12mm">1. What Songrande is</h2>
+<p><b>SoundGrain</b>, by Olivier B&eacute;langer, is a granular synthesizer you play by drawing. You load a sound, its waveform fills the window, and you draw trajectories over it: a small ball runs along each one, and wherever it is, grains of the sound are played from that place. Left to right is the place in the sound; up and down is whatever you ask it to be (pitch, density, grain length and more).</p>
+<p><b>Songrande</b> is SoundGrain in a room. The waveform lies on the floor, you stand in the middle of it, and the pen can leave the floor. A trajectory still chooses its grains by where it is over the floor, exactly as in SoundGrain, and now the same line says <b>where the sound is heard</b>: to your left, behind you, overhead, close to your ear or far away. Draw a circle round yourself and the sound walks round you; pull the end of it up and it climbs.</p>
+<p>Every trajectory is one stream of grains and one source in space, up to sixteen at once. All of them are encoded into one <b>Ambisonic</b> scene (AmbiX: ACN channel order, SN3D normalisation, 1st to 7th order, the format the IEM and SPARTA plug-ins use), and that scene is either sent out as it is, for a decoder of your own, or decoded inside Songrande for headphones, for two loudspeakers or for a loudspeaker layout.</p>
+<p>Everything SoundGrain does is still there and works the same way: the four kinds of trajectory, the lowpass filter on the pen, the granulator controls, the Y axis, the FX balls, the envelope, MIDI, the equaliser and compressor, recording. SoundGrain itself, unchanged, comes with Songrande as a second application.</p>
+</section>
+
+<section>
+<h2>2. Installing it</h2>
+<p>Each download holds two applications, <b>Songrande</b> and <b>SoundGrain</b>, this manual, an example project and the licence.</p>
+<table>
+<tr><td>macOS (Apple silicon)</td><td>Unzip and drag <b>Songrande.app</b> and <b>SoundGrain.app</b> to <i>/Applications</i>. They are not notarised: the first time, right-click the application and choose <i>Open</i>, or run <code>xattr -dr com.apple.quarantine /Applications/Songrande.app /Applications/SoundGrain.app</code> once in Terminal. macOS asks once whether Songrande may use the microphone (the <b>Mic</b> button records into the sound table).</td></tr>
+<tr><td>Windows (64-bit)</td><td>Unzip the <b>Songrande</b> folder anywhere and start <b>Songrande.exe</b> or <b>SoundGrain.exe</b>. The two share the files in <i>_internal</i>: keep the folder together. SmartScreen may ask before the first start: <i>More info</i>, <i>Run anyway</i>.</td></tr>
+<tr><td>Linux (x86-64)</td><td>Unpack the <b>Songrande</b> folder anywhere and run <code>./Songrande</code> or <code>./SoundGrain</code>. Built on Ubuntu 22.04; it needs GTK 3 and ALSA or JACK, which a desktop system has.</td></tr>
+<tr><td>From the source</td><td>With Python 3.11 or later: <code>pip install pyo wxPython numpy markdown</code>, then <code>python Songrande.py</code> or <code>python SoundGrain.py</code> in the source folder. (On Linux, wxPython comes from your distribution or from <i>extras.wxpython.org</i>.)</td></tr>
+</table>
+<p>The first time Songrande starts it takes the audio and MIDI devices SoundGrain was set to, if SoundGrain has been used on the computer. After that it keeps its own settings.</p>
+
+<h2 style="margin-top:9mm">3. A first sound</h2>
+<ol>
+<li><b>File &rarr; Open Soundfile...</b> (or drop a sound on the room). Its waveform appears on the floor. Or <b>File &rarr; Open...</b> the example, <i>examples/demo.sgr</i>.</li>
+<li>Put on <b>headphones</b>. Songrande starts with the <i>Binaural</i> output, which is made for them.</li>
+<li>Draw a line on the floor with the mouse.</li>
+<li>Press <b>Start</b>. A ball runs along the line: the sound is where the ball is.</li>
+<li>Click the <b>Top</b> button at the top left of the room, choose <b>Circle</b> under <i>Trajectories</i>, press in the middle of the room, on yourself, and drag outwards. The sound goes round your head.</li>
+<li>Back in the <b>3D</b> view, choose <b>Free</b> and draw another line; half way along it hold <b>Cmd</b> (macOS) or <b>Ctrl</b> (Windows, Linux) and move the mouse up. The pen leaves the floor, and the sound rises with it.</li>
+</ol>
+<div class="box">Songrande plays on headphones until you tell it otherwise. For loudspeakers or for an Ambisonic decoder, see chapter 12.</div>
+</section>
+
+<section>
+<h2>4. The window</h2>
+<img class="fig" src="window.png">
+<p class="cap">The example project playing. Four trajectories, each with its ball; a delay ball (cyan) at the back and a reverb ball (magenta) up in the spiral.</p>
+<table>
+<tr><td>the room</td><td>takes the place of SoundGrain's drawing surface. The white square is the <b>floor</b>, at the height of your ears, with the sound's waveform on it; the small head in the middle is <b>you</b>, the nose pointing to the front; the circle round you is the <b>loudspeaker sphere</b>. The faint box is as far as anything can go.</td></tr>
+<tr><td>view, draw on</td><td>the two rows of buttons at the top left: where the room is seen from, and what the pen draws on (chapters 5 and 6).</td></tr>
+<tr><td>a trajectory</td><td>a coloured line with a numbered square at its start. Thin lines drop from it to the floor, where its shadow lies: that is how you read its height. Circles, oscillations and spirals also carry a blue square, to resize them.</td></tr>
+<tr><td>a ball on a trajectory</td><td>where that stream of grains is now, with its foot on the floor.</td></tr>
+<tr><td>the control panel</td><td>on the right, SoundGrain's: the kind of trajectory, the <b>Draw</b>, <b>Var</b> and <b>Play</b> tabs and a new <b>3D</b> tab, the equaliser, the compressor, the level and its meter, <b>Mic</b>, <b>Start</b> and <b>Rec Start</b>.</td></tr>
+<tr><td>the numbers at the bottom right</td><td>where the pen is: X (seconds into the sound), Y, Z (height), then azimuth, elevation and distance from you.</td></tr>
+<tr><td>the status bar</td><td>the sound that is loaded, and anything Songrande has to tell you.</td></tr>
+</table>
+<p>The distances are in <b>radii of the loudspeaker sphere</b>. The floor is two radii wide. A sound on the sphere is at its normal level; inside it, nearer and louder; outside it (towards the corners of the room), further and softer.</p>
+
+<h2 style="margin-top:8mm">5. Looking at the room</h2>
+<div class="two"><div><img class="fig" src="room_top.png"><p class="cap">Top: from above. This is SoundGrain's own surface.</p></div>
+<div><img class="fig" src="room_front.png"><p class="cap">Front: from behind you. Left - right and height.</p></div></div>
+<table>
+<tr><td>3D &nbsp;<kbd>P</kbd></td><td>from wherever you like. <b>Drag with the right button</b>, or hold <b>Alt</b> and drag, in an empty part of the room to walk round it.</td></tr>
+<tr><td>Top &nbsp;<kbd>T</kbd></td><td>from above, the front at the top of the picture.</td></tr>
+<tr><td>Front &nbsp;<kbd>F</kbd></td><td>from behind you, looking forward. The pen draws left - right and up - down.</td></tr>
+<tr><td>Side &nbsp;<kbd>S</kbd></td><td>from your left. The pen draws front - back and up - down.</td></tr>
+<tr><td>the wheel</td><td>comes closer or steps back. Sideways (or with Shift) it turns the room.</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>puts the view back where it started.</td></tr>
+</table>
+<p>Looking changes nothing you hear. The flat views are the way to place something exactly: the Top view for where it is over the floor, the Front or Side view for how high.</p>
+</section>
+
+<section>
+<h2>6. Drawing in three dimensions</h2>
+<p>A mouse moves over a flat screen, so the pen always draws <b>on a surface</b>, and one key lets it leave that surface.</p>
+<h3>What the pen draws on</h3>
+<table>
+<tr><td>Floor</td><td>a level plane. It starts at ear level; <b>Pen height</b> in the <b>3D</b> tab moves it up and down, and a blue square shows where it is. This is where to start.</td></tr>
+<tr><td>Sphere</td><td>the loudspeaker sphere, on the side that faces you (walk round to reach the other side). Everything drawn on it stays at one distance from you, so only its direction changes. <b>Sphere radius</b> in the <b>3D</b> tab makes it smaller or larger. Circles, oscillations and spirals are wrapped round it.</td></tr>
+<tr><td>View</td><td>the plane that faces you, through the middle of the room. In the Front and Side views the pen always draws on this plane.</td></tr>
+</table>
+<p>The key <kbd>G</kbd> steps through the three.</p>
+<h3>Pulling the pen off its surface</h3>
+<div class="two"><div><img class="fig" src="room_pen.png"><p class="cap">A line drawn on the floor and pulled up on the way. The thin blue line is the pen's height.</p></div>
+<div><img class="fig" src="room_sphere.png"><p class="cap">Drawing on the sphere (blue). The line keeps its distance from you.</p></div></div>
+<p>Hold <b>Cmd</b> (macOS) or <b>Ctrl</b> (Windows, Linux) while you draw, and move the mouse up or down: the pen goes <b>straight up or down</b> from where it is (on the sphere: in and out; on the view plane: towards you and away). Let go of the key and it goes on drawing at its new height. Hold and release as often as you like in one line: steps, slopes, a line that dives under the floor and comes back. The <b>wheel</b> does the same while the button is down.</p>
+<h3>The kinds of trajectory</h3>
+<table>
+<tr><td>Free</td><td>free-hand. How fast you draw is how fast it plays, as in SoundGrain. With <b>Closed</b> on, the end is joined to the start when you let go.</td></tr>
+<tr><td>Circle</td><td>press where its centre is and drag outwards. It lies in the surface you draw on: level on the floor, upright on the view plane, round a patch of the sphere.</td></tr>
+<tr><td>Oscil</td><td>SoundGrain's oscillation, shaped by <b>Oscil period</b> and <b>Oscil scaling</b> in the <b>Draw</b> tab.</td></tr>
+<tr><td>Line</td><td>a straight line from where you press to where you let go. Pull the pen up on the way and it is a line into the air.</td></tr>
+<tr><td>Spiral</td><td>new: a circle that climbs, square to the surface it is drawn on. <b>Oscil period</b> is its number of turns, <b>Oscil scaling</b> how high it climbs (in radii of the spiral).</td></tr>
+</table>
+<p>The <b>Lowpass cutoff</b> and <b>Q</b> of the <b>Draw</b> tab smooth the pen as in SoundGrain, now in all three directions; a high Q makes it swing.</p>
+</section>
+
+<section>
+<h2>7. Changing what you drew</h2>
+<p>All of this is SoundGrain's, with height added. A drag is level (or in the plane facing you, in the Front and Side views and when drawing on the View plane). With <b>Cmd / Ctrl</b> held, or with the wheel, it is up and down.</p>
+<table>
+<tr><td>drag the numbered square</td><td>moves the trajectory. With <b>Shift</b>: all of them.</td></tr>
+<tr><td>drag anywhere on the line</td><td>pulls that point, and its neighbours less and less (<i>Drawing &rarr; Edition levels</i> sets how many). <b>With Cmd / Ctrl this lifts a stretch of a flat line into an arch</b>; in the Front and Side views a plain drag does the same.</td></tr>
+<tr><td>drag the blue square</td><td>resizes a circle, an oscillation or a spiral.</td></tr>
+<tr><td>right-click the numbered square</td><td>deletes the trajectory.</td></tr>
+<tr><td>Alt-click or double-click it</td><td>makes a copy, which you are then dragging.</td></tr>
+</table>
+<p>With the room in focus (click in it), these keys act on the selected trajectory. They are also in the <b>Space</b> menu, and <b>Ctrl+Z</b> undoes them.</p>
+<table class="keys">
+<tr><td><kbd>D</kbd> &nbsp; <kbd>M</kbd></td><td>a copy; a twin mirrored left to right (two lines of sound that answer each other across you)</td></tr>
+<tr><td><kbd>H</kbd> &nbsp; <kbd>V</kbd> &nbsp; <kbd>U</kbd></td><td>flip left - right, front - back, up - down</td></tr>
+<tr><td><kbd>R</kbd></td><td>turn 15&deg; about the vertical (with Shift 5&deg;, with Ctrl+Shift 1&deg;)</td></tr>
+<tr><td><kbd>X</kbd> &nbsp; <kbd>Y</kbd></td><td>tilt: X lifts its front, Y its side (Shift and Ctrl+Shift as for R)</td></tr>
+<tr><td><kbd>[</kbd> &nbsp; <kbd>]</kbd></td><td>lower, raise</td></tr>
+<tr><td><kbd>-</kbd> &nbsp; <kbd>=</kbd></td><td>smaller, larger</td></tr>
+<tr><td><kbd>Z</kbd></td><td>wrap it onto the sphere: every point keeps its direction and goes to the distance of <b>Sphere radius</b></td></tr>
+<tr><td><kbd>B</kbd></td><td>flatten it to its mean height</td></tr>
+<tr><td>arrows</td><td>move all trajectories over the floor; with Shift the selected one; with Cmd / Ctrl up and down</td></tr>
+<tr><td><kbd>Delete</kbd></td><td>delete the selected trajectory</td></tr>
+<tr><td><kbd>1</kbd> to <kbd>8</kbd>, <kbd>0</kbd></td><td>freeze and unfreeze a trajectory's ball; all of them</td></tr>
+</table>
+
+<h2 style="margin-top:8mm">8. Playing: timer, step, direction, width</h2>
+<p>The <b>Play</b> tab is SoundGrain's, for the trajectory chosen in <b>Selected Traj</b> (or <i>all</i>).</p>
+<table>
+<tr><td>Timer speed</td><td>how often the ball takes a step, in milliseconds.</td></tr>
+<tr><td>Point step</td><td>how many points it steps over each time.</td></tr>
+<tr><td>Amplitude (dB)</td><td>the level of that trajectory.</td></tr>
+<tr><td>Direction</td><td>new. <b>Forward</b>: to the end and again from the start, as in SoundGrain (an open line then jumps across the room). <b>Backward</b>. <b>Back and forth</b>: to the end and back the way it came, so the sound never jumps.</td></tr>
+</table>
+<p>The <b>Var</b> tab gives a trajectory a <b>Width</b>. In SoundGrain the ball then wanders from side to side of a band; in the room the band is a tube: the ball also wanders above and below the line. With <b>Periodic &lt;--&gt; Random</b> at <i>periodic</i> it corkscrews round the line, at the <b>Variation speed</b>.</p>
+</section>
+
+<section>
+<h2>9. The grains: SoundGrain's X and Y in a room</h2>
+<p>The granulator is SoundGrain's, untouched: <b>File &rarr; Open Granulator Controls</b> (Ctrl+P) has the density, pitch, length and filter of the grains and their randomness, and its <b>Y Axis</b> tab says what the Y of a trajectory's point does to them. <b>File &rarr; Open Envelope Window</b> shapes the grain.</p>
+<p>What is new is what X and Y are, now that a point has three coordinates. It is set in the <b>Mapping</b> tab of the Space Controls:</p>
+<table>
+<tr><th>X: the place in the sound</th><th></th></tr>
+<tr><td>Left - right</td><td>SoundGrain's own. The left wall is the start of the sound, the right wall its end.</td></tr>
+<tr><td>Azimuth</td><td>the sound is laid round you, clockwise from the front, and drawn that way on the floor. A circle round you plays the sound through once.</td></tr>
+<tr><td>Along the path</td><td>from the start of the trajectory to its end, wherever it goes. The place in the room is then free of the place in the sound.</td></tr>
+<tr><td>Height</td><td>the floor of the room is the start of the sound, the ceiling its end.</td></tr>
+<tr><th>Y: the Y-axis parameters</th><th></th></tr>
+<tr><td>Front - back</td><td>SoundGrain's own: the back wall is 0, the front wall 1.</td></tr>
+<tr><td>Height</td><td>the floor of the room is 0, the ceiling 1: a climbing line rises in pitch, if pitch is what Y does.</td></tr>
+<tr><td>Distance</td><td>0 at your head, growing outwards.</td></tr>
+<tr><td>Elevation</td><td>0 straight below you, 1 straight above.</td></tr>
+</table>
+<img class="half" src="room_azimuth.png">
+<p class="cap" style="text-align:center">X follows the azimuth: the waveform is drawn round the listener.</p>
+<p>A grain needs sound after the place it starts at. SoundGrain falls silent when a trajectory reaches the right edge; in the room that edge is a wall, so Songrande holds the place in the sound at the last one a whole grain still fits after.</p>
+
+<h2 style="margin-top:8mm">10. FX balls</h2>
+<p>The <b>FxBall</b> menu adds SoundGrain's ten effects (reverb, delay, distortion, waveguide, complex resonator, degrade, harmonizer, clipper, flanger, detuned resonator; the harmonizer is rebuilt from two swept delay lines, as pyo's own gave no sound on some systems). In the room a ball is a <b>sphere</b>: a stream sounds through the effect while its ball is inside it, more the nearer it is to the middle, and <b>the effect's sound comes out from where the FX ball is</b>. A delay ball at the back of the room answers from the back.</p>
+<table>
+<tr><td>drag its middle</td><td>moves it (with Cmd / Ctrl: up and down)</td></tr>
+<tr><td>drag its rim</td><td>resizes it</td></tr>
+<tr><td>Shift-drag its middle up and down</td><td>how fast the send falls off towards its edge</td></tr>
+<tr><td>right-click its middle</td><td>opens its sliders: the effect's two, <b>Amplitude</b>, and <b>Spread</b> (in place of SoundGrain's pan: 0 a point at the ball's centre, 1 from all round you)</td></tr>
+<tr><td>Alt-click or double-click</td><td>deletes it</td></tr>
+</table>
+</section>
+
+<section>
+<h2>11. The Space Controls</h2>
+<div class="two"><div>
+<img class="fig" src="space_controls.png">
+<p class="cap">File &rarr; Open Space Controls (Ctrl+L). Right-click a slider to give it a MIDI controller.</p>
+</div><div>
+<table>
+<tr><td>Room Size</td><td>metres from you to the loudspeaker sphere. Sets how long sound takes to reach you and how much the air takes off.</td></tr>
+<tr><td>Distance Rolloff</td><td>1: the level follows 1 / distance (never more than +12 dB near your head). 0: distance does not change the level.</td></tr>
+<tr><td>Air Absorption</td><td>far sounds lose their highs.</td></tr>
+<tr><td>Doppler</td><td>a sound coming towards you rises in pitch, one going away falls, as much as the room size says. 0 turns it off.</td></tr>
+<tr><td>Source Spread</td><td>0 a point, 1 from all round you.</td></tr>
+<tr><td>Grain Scatter</td><td>single grains land this many degrees away from the trajectory, all round it: a cloud in place of a point.</td></tr>
+<tr><td>Room Reverb Level, Time</td><td>a room round the whole scene, heard from all round. Far sounds are wetter than near ones.</td></tr>
+<tr><td>Scene Turn, Turning Speed</td><td>turn everything about you, by an angle or steadily. The head in the room turns the other way to show it.</td></tr>
+<tr><td>Flock</td><td>the balls leave their lines and fly together, each on a leash to its own trajectory: drawn towards the others, along with them, and not too close. At 0 every ball is on its line.</td></tr>
+<tr><td>Motion</td><td>right: the sound glides from one step of the ball to the next. Left: it jumps with the timer (try it with a slow <i>Timer speed</i>).</td></tr>
+</table>
+</div></div>
+<p>Close to your head a sound spreads round it instead of flipping from one side to the other as it passes through.</p>
+<p><b>Grain Scatter</b> uses the granulator's own panning of single grains: each grain is born at one of four points round the trajectory's ball, or between two of them, and stays there. SoundGrain's <i>Grains Panning Random</i> and the Y axis's <i>Grains Panning</i> move grains round that cloud. A scattered stream is four times the work of a plain one.</p>
+</section>
+
+<section>
+<h2>12. Where the sound goes</h2>
+<div class="two"><div>
+<img class="fig" src="settings.png">
+<p class="cap">File &rarr; Open Settings (Ctrl+;). The output is under Project Settings.</p>
+</div><div>
+<table>
+<tr><td>Binaural (headphones)</td><td>two channels, for headphones. The default.</td></tr>
+<tr><td>Stereo (two loudspeakers)</td><td>left and right. Height and front - back are not heard.</td></tr>
+<tr><td>Ambisonics (to a decoder)</td><td>the scene itself, for a decoder of your own.</td></tr>
+<tr><td>Loudspeakers</td><td>one channel per loudspeaker of the <b>Layout</b>.</td></tr>
+<tr><td>Order</td><td>of the Ambisonic scene, 1 to 7. Higher is sharper, and more channels and work. 3 is a good place to stay.</td></tr>
+<tr><td>Record the Ambisonic bus</td><td><b>Rec Start</b> then writes the scene while you listen on headphones or loudspeakers.</td></tr>
+</table>
+</div></div>
+<p>The output can be changed while audio is stopped; it restarts the audio engine. If the output device has too few channels for what you choose, the status bar says so and Songrande plays Binaural instead.</p>
+<h3>Ambisonics, to a decoder</h3>
+<table>
+<tr><th>Order</th><th>Channels</th></tr>
+<tr><td>1st</td><td>4</td></tr><tr><td>2nd</td><td>9</td></tr><tr><td>3rd</td><td>16</td></tr><tr><td>4th</td><td>25</td></tr>
+<tr><td>5th</td><td>36</td></tr><tr><td>6th</td><td>49</td></tr><tr><td>7th</td><td>64</td></tr>
+</table>
+<p>The format is <b>AmbiX</b>: ACN channel order, SN3D normalisation, the front along +X, as the IEM Plug-in Suite and SPARTA expect. To play into a decoder in REAPER:</p>
+<ol>
+<li>Choose an output device with enough channels in <b>Settings</b>: a multichannel interface, or a virtual device such as BlackHole 16ch (3rd order) or 64ch (7th).</li>
+<li>Set <b>Output</b> to <i>Ambisonics</i> and the <b>Order</b>.</li>
+<li>In REAPER make a track with as many channels, take its input from that device, and put a decoder of the same order on it with SN3D normalisation: the IEM <b>AllRADecoder</b> for loudspeakers, the <b>BinauralDecoder</b> for headphones, the <b>EnergyVisualizer</b> to see it.</li>
+</ol>
+<h3>Loudspeakers</h3>
+<img class="half" src="room_speakers.png">
+<p class="cap" style="text-align:center">7.1.4: the loudspeakers stand in the room, numbered by output channel.</p>
+<p>Layouts: Quad, 5.0, 5.1, Hexagon, 7.1, Octagon, Cube, 5.1.4, 7.1.4, Dome 8+4+1, Icosahedron, Sphere 16 and Sphere 24. The channel order is the usual one (L R C LFE Ls Rs ... then the top loudspeakers); an LFE channel gets no signal. <b>Load layout...</b> (also in the <b>Space</b> menu) reads a loudspeaker layout saved by the IEM AllRADecoder or SPARTA, a JSON file with each loudspeaker's azimuth, elevation and channel.</p>
+</section>
+
+<section>
+<h2>13. Recording and rendering</h2>
+<p><b>Rec Start</b> records what goes to the output device, with all its channels, into the folder and under the name set in <b>Settings</b> (the date and time are added). With <i>Record the Ambisonic bus</i> ticked the file is the Ambisonic scene, named <i>..._ambix3_...</i> for 3rd order.</p>
+<p>A saved project can also be rendered without the window, faster than real time. In a terminal:</p>
+<pre>Songrande --render project.sgr out.wav --dur 60 --output Ambisonics --order 5</pre>
+<table>
+<tr><td>--dur</td><td>seconds to render</td></tr>
+<tr><td>--output</td><td>Binaural, Stereo, Ambisonics or Speakers (the project's own if left out)</td></tr>
+<tr><td>--order, --layout</td><td>the order, 1 to 7; the name of a layout</td></tr>
+<tr><td>--bus</td><td>write the Ambisonic scene whatever the output is</td></tr>
+<tr><td>--sound, --sr</td><td>another sound file; another sampling rate</td></tr>
+</table>
+<p>On macOS the program is <i>Songrande.app/Contents/MacOS/Songrande</i>.</p>
+
+<h2 style="margin-top:8mm">14. MIDI</h2>
+<p>As in SoundGrain. <b>Midi &rarr; Memorize Trajectory</b> keeps the selected trajectory, with its height and all; after that every note played makes a copy of it, transposed by the note, placed front to back by how hard it was played (and left to right by its pitch, if <i>Midi Settings</i> says so), and takes it away again when the note ends. Right-click a slider of the Granulator Controls or of the Space Controls and move a controller to tie the two together.</p>
+
+<h2 style="margin-top:8mm">15. Projects, and SoundGrain itself</h2>
+<p>Songrande saves <b>.sgr</b> files: everything in the room, the granulator, the space and the view. It also opens SoundGrain's <b>.sg</b> files: the surface becomes the floor, with every trajectory and FX ball in its place at ear level, and it sounds as it did, now round you. Saving then asks for a new .sgr file; the .sg file is left alone.</p>
+<p>The output format belongs to the project and to the computer: a project saved with a 64-channel output still opens on a laptop, on headphones.</p>
+<p><b>SoundGrain</b> is the second application in the download: Olivier B&eacute;langer's SoundGrain 6.1.0 as he wrote it, with its own documentation under its Help menu. The two keep separate settings and do not get in each other's way.</p>
+</section>
+
+<section>
+<h2>16. If something seems wrong</h2>
+<table>
+<tr><td>No sound</td><td>Is a sound loaded (the status bar says)? Is there a trajectory, and does its ball move after <b>Start</b>? Is the right output device chosen in <b>Settings</b>? Is the <b>Global amplitude</b> up?</td></tr>
+<tr><td>The sound is in my head, or does not move much</td><td>Binaural is for headphones; on loudspeakers choose <i>Stereo</i> or <i>Loudspeakers</i>. A sound drawn close to the head spreads round it on purpose: draw further out.</td></tr>
+<tr><td>It says the device has too few channels</td><td>Ambisonics and loudspeaker layouts need one device channel each. Pick a device with enough in <b>Settings</b>, or a lower order.</td></tr>
+<tr><td>Left and right are swapped in my decoder</td><td>Set the decoder to SN3D and ACN (AmbiX). In Songrande the front is the top of the Top view.</td></tr>
+<tr><td>A trajectory will not start where I press</td><td>A press on a line pulls that line. Press where nothing is, or draw from another side of the room.</td></tr>
+<tr><td>The pen will not go where I want on the sphere</td><td>It draws on the side that faces you. Walk round (right-drag) or use the Top view for the top half.</td></tr>
+<tr><td>The pitch bends when things move</td><td>That is the Doppler effect. Turn <b>Doppler</b> down in the Space Controls, or make the <b>Room Size</b> smaller.</td></tr>
+<tr><td>Clicks or dropouts with many trajectories</td><td>Lower the <b>Order</b>, or turn <b>Grain Scatter</b> to 0. Sixteen streams at 3rd order are light; at 7th order they are a great deal of work, and with scatter as well more than one processor core can do in real time (rendering offline always works).</td></tr>
+<tr><td>The keys do nothing</td><td>Click in the room first, so that it has the keyboard.</td></tr>
+</table>
+
+<h2 style="margin-top:8mm">17. Every mouse action and key</h2>
+<table class="keys">
+<tr><th>In an empty part of the room</th><th></th></tr>
+<tr><td>drag</td><td>draw a trajectory</td></tr>
+<tr><td>Cmd / Ctrl while dragging, or the wheel</td><td>pull the pen off its surface</td></tr>
+<tr><td>right-drag, Alt-drag, middle-drag</td><td>walk round the room</td></tr>
+<tr><td>wheel; sideways or Shift + wheel</td><td>closer and further; turn</td></tr>
+<tr><th>On a trajectory</th><th></th></tr>
+<tr><td>drag the numbered square (Shift: all)</td><td>move</td></tr>
+<tr><td>drag the line</td><td>pull it</td></tr>
+<tr><td>drag the blue square</td><td>resize a circle, oscillation or spiral</td></tr>
+<tr><td>right-click the numbered square</td><td>delete</td></tr>
+<tr><td>Alt-click or double-click it</td><td>copy</td></tr>
+<tr><th>On an FX ball</th><th></th></tr>
+<tr><td>drag the middle; the rim</td><td>move; resize</td></tr>
+<tr><td>Shift-drag the middle; right-click; Alt-click</td><td>falloff; sliders; delete</td></tr>
+<tr><th>Keys, with the room in focus</th><th></th></tr>
+<tr><td><kbd>P</kbd> <kbd>T</kbd> <kbd>F</kbd> <kbd>S</kbd> &nbsp; <kbd>Esc</kbd> &nbsp; <kbd>G</kbd></td><td>3D, Top, Front, Side view; reset the view; next drawing surface</td></tr>
+<tr><td><kbd>D</kbd> <kbd>M</kbd> &nbsp; <kbd>H</kbd> <kbd>V</kbd> <kbd>U</kbd> &nbsp; <kbd>R</kbd> <kbd>X</kbd> <kbd>Y</kbd></td><td>copy, mirrored twin; flips; turn and tilts</td></tr>
+<tr><td><kbd>[</kbd> <kbd>]</kbd> &nbsp; <kbd>-</kbd> <kbd>=</kbd> &nbsp; <kbd>Z</kbd> &nbsp; <kbd>B</kbd></td><td>lower, raise; smaller, larger; onto the sphere; flatten</td></tr>
+<tr><td>arrows (Shift: selected; Cmd / Ctrl: height)</td><td>move</td></tr>
+<tr><td><kbd>Delete</kbd> &nbsp; <kbd>1</kbd>-<kbd>8</kbd> <kbd>0</kbd> &nbsp; <kbd>9</kbd></td><td>delete; freeze; SoundGrain's surprise</td></tr>
+<tr><th>Menus</th><th></th></tr>
+<tr><td>Ctrl+N, O, S &nbsp; Shift+Ctrl+O, I, S</td><td>new, open, save; open soundfile, insert soundfile, save as</td></tr>
+<tr><td>Ctrl+; &nbsp; Ctrl+P &nbsp; Ctrl+L &nbsp; Ctrl+E</td><td>Settings; Granulator Controls; Space Controls; Envelope</td></tr>
+<tr><td>Ctrl+R &nbsp; Ctrl+T &nbsp; Ctrl+Z</td><td>start and stop; restart every ball; undo</td></tr>
+<tr><td>Ctrl+1 ... Ctrl+0</td><td>add an FX ball</td></tr>
+</table>
+<p>On macOS, Ctrl in the menus is Cmd.</p>
+</section>
+
+<section>
+<h2>18. How it works, sources and credits</h2>
+<p>Songrande is SoundGrain's own program with its drawing surface replaced by a room and its stereo output replaced by an Ambisonic scene. Each of the sixteen granulators (pyo's <i>Particle2</i>) gives out four signals instead of two, the corners of a small cloud round its trajectory's point, and pans every grain among them as the grain is born. Each of those goes through a delay as long as the sound's way to you (which is what bends the pitch of a moving sound) and a filter for the air, and is then weighted onto the channels of the scene by the spherical harmonics of its direction and by its distance. The weights glide from one step of the ball to the next, so nothing clicks. The FX balls and the room's reverb are sources in the same scene. SoundGrain's equaliser runs on every channel alike, and its compressor listens to the omnidirectional channel and turns all channels down together, so neither can bend the picture.</p>
+<p>The scene is decoded for headphones with head-related filters fitted to the spherical harmonics by the magnitude-least-squares method (Sch&ouml;rkhuber, Zaunschirm and H&ouml;ldrich, 2018), from the MIT KEMAR measurements of Gardner and Martin (1994) that come with pyo; for loudspeakers with the all-round Ambisonic decoder of Zotter and Frank (2012), max-rE weighted.</p>
+<table>
+<tr><td>SoundGrain</td><td>Olivier B&eacute;langer, 2009-2018 and since. Songrande is a derivative work of SoundGrain 6.1.0 and, like it, free software under the GNU General Public License version 3. <i>github.com/belangeo/soundgrain</i></td></tr>
+<tr><td>pyo</td><td>Olivier B&eacute;langer's audio engine for Python (LGPL), which makes every sound here. <i>github.com/belangeo/pyo</i></td></tr>
+<tr><td>wxPython, NumPy</td><td>the windows and the mathematics.</td></tr>
+<tr><td>Ambisonic conventions</td><td>those of the IEM Plug-in Suite and SPARTA (AmbiX), so that Songrande's scene goes straight into their decoders. The distance model follows the IEM RoomEncoder's ideas; no code of theirs is included.</td></tr>
+<tr><td>its relatives</td><td>the author's other spatial instruments, from which the distance and Doppler model, the grain scatter, the flock, the turning scene and the mirrored lines come: Pinkie Pie's Balloon Palace, Leitner (after Bernhard Leitner and Iannis Xenakis), openfield, Chloaeilius and ObliqSonic.</td></tr>
+<tr><td>Songrande</td><td>femifleming, 2026, written with Claude Code. <i>github.com/femifleming/songrande</i></td></tr>
+</table>
+</section>
+</body></html>

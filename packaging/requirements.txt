@@ -1,0 +1,5 @@
+# what Songrande and SoundGrain run on (wxPython comes from the system or
+# from extras.wxpython.org on Linux, see packaging/build_linux.sh)
+pyo>=1.1.0
+numpy>=1.26
+markdown

@@ -1,0 +1,81 @@
+name: build
+
+# Builds Songrande and SoundGrain for macOS, Windows and Linux, runs the tests
+# and the packaged programs' self-checks (no audio device, no screen needed
+# beyond a virtual one on Linux), and keeps the three archives as artifacts.
+# packaging/release.sh makes a release out of the artifacts of a green run.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "LICENSE"]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: Linux, os: ubuntu-22.04}
+          - {name: Windows, os: windows-latest}
+          - {name: macOS, os: macos-14}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: packaging/requirements.txt
+
+      - name: Linux (tests, build, self-checks, archive)
+        if: runner.os == 'Linux'
+        run: packaging/build_linux.sh python
+
+      - name: Dependencies (macOS, Windows)
+        if: runner.os != 'Linux'
+        run: python -m pip install -q -r packaging/requirements.txt wxPython pyinstaller
+
+      - name: Tests (macOS, Windows)
+        if: runner.os != 'Linux'
+        run: |
+          python packaging/probe_pyo.py
+          python -m unittest discover -s tests -p "test_songrande*.py"
+
+      - name: Build (macOS, Windows)
+        if: runner.os != 'Linux'
+        run: python -m PyInstaller --noconfirm --distpath dist --workpath build packaging/apps.spec
+
+      - name: Packaged programs and archive (macOS, Windows)
+        if: runner.os != 'Linux'
+        run: |
+          python packaging/check_packaged.py out/selftest
+          python packaging/package.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: songrande-${{ matrix.name }}
+          path: |
+            dist/songrande-*.zip
+            dist/songrande-*.tar.gz
+          if-no-files-found: warn
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: selftest-${{ matrix.name }}
+          path: |
+            out/selftest
+            build_pyinstaller.log
+          if-no-files-found: ignore
+          retention-days: 7
